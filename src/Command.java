@@ -12,6 +12,7 @@ public class Command
 	private String assignmentDescription;	//e.g. Implement some databse
 	private String assignmentPointValue;	//e.g. 40
 	
+	private String studentId;	//e.g. 123
 	private String studentFullName;		//e.g. Ashley Lynn
 	private String studentUserName;		//e.g. ashley123
 	
@@ -23,6 +24,11 @@ public class Command
 	public Command()
 	{
 		
+	}
+	
+	public Command(String commandType)
+	{
+		this.commandType = commandType;
 	}
 	
 	//get, set of commandType
@@ -103,6 +109,16 @@ public class Command
 	public void SetAssignmentPointValue(String assignmentPointValue)
 	{
 		this.assignmentPointValue = assignmentPointValue;
+	}
+	
+	//get, set of studentId
+	public String GetStudentId()
+	{
+		return this.studentId;
+	}
+	public void SetStudentId(String studentId)
+	{
+		this.studentId = studentId;
 	}
 	
 	//get, set of studentFullName
