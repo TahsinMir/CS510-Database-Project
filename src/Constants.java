@@ -16,5 +16,13 @@ public class Constants
 	//student management
 	public static String addStudent = "add-student";
 	public static String showStudent = "show-students";
+	public static String grade = "grade";
+	
+	//grade reporting
+	public static String studentGrades = "student-grades";
+	public static String gradebook = "gradebook";
+	
+	//extra credit
+	public static String importGrades = "import-grades";
 
 }
