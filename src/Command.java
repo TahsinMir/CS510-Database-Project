@@ -2,13 +2,14 @@
 public class Command
 {
 	
-	private String commandType;
+	private String commandType;		//new-class
 	private String courseNumber;	//e.g. CS410
 	private String courseTerm;	//e.g. sp20
 	private String courseSectionNo;	//e.g. 1
 	private String courseDescription;	//e.g. Database
 	
 	private String assignmentName;	//e.g. Assignment1
+	private String assignmentCategory;
 	private String assignmentDescription;	//e.g. Implement some databse
 	private String assignmentPointValue;	//e.g. 40
 	
@@ -20,6 +21,8 @@ public class Command
 	
 	private String categoryWeightForCourse;	//e.g. 20
 	private String studentReceivedGradeForCourse;	//e.g. 30
+	
+	private String usernameSubstring;
 	
 	public Command()
 	{
@@ -89,6 +92,16 @@ public class Command
 	public void SetAssignmentName(String assignmentName)
 	{
 		this.assignmentName = assignmentName;
+	}
+	
+	//get, set of assignmentCategory
+	public String GetAssignmentCategory()
+	{
+		return this.assignmentCategory;
+	}
+	public void SetAssignmentCategory(String assignmentCategory)
+	{
+		this.assignmentCategory = assignmentCategory;
 	}
 	
 	//get, set of assignmentDescription
@@ -169,5 +182,26 @@ public class Command
 	public void SetStudentReceivedGradeForCourse(String studentReceivedGradeForCourse)
 	{
 		this.studentReceivedGradeForCourse = studentReceivedGradeForCourse;
+	}
+	
+	//get, set of usernameSubstring
+	public String GetUsernameSubstring()
+	{
+		return this.usernameSubstring;
+	}
+	public void SetUsernameSubstring(String usernameSubstring)
+	{
+		this.usernameSubstring = usernameSubstring;
+	}
+	
+	public String toString()
+	{
+		return "commandType: " + this.commandType + ", courseNumber" + this.courseNumber + ", courseTerm: " + this.courseTerm
+				+ ",\n courseSectionNo: " + this.courseSectionNo + ", courseDescription: " + this.courseDescription
+				+ ",\n assignmentName: " + this.assignmentName + ", assignmentCategory: " + this.assignmentCategory
+				+ ",\n assignmentDescription: " + this.assignmentDescription + ", assignmentPointValue: " + this.assignmentPointValue
+				+ ",\n studentId: " + this.studentId + ", studentFullName: " + this.studentFullName + ", studentUserName: " + this.studentUserName
+				+ ",\n categoryName: " + this.categoryName + ", categoryWeightForCourse: " + this.categoryWeightForCourse
+				+ ",\n studentReceivedGradeForCourse: " + this.studentReceivedGradeForCourse + ", usernameSubstring: " + this.usernameSubstring;
 	}
 }
