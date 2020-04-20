@@ -6,10 +6,24 @@ import java.util.logging.Logger;
 public class SchoolDbCommandExecutor
 {
 	private Logger log;
+	private DatabaseConnection dbConnection;
 	
 	public static void main(String[] args)
 	{
 		SchoolDbCommandExecutor schoolDbCommandExecutor = new SchoolDbCommandExecutor();
+		
+		//Adding shut down hook
+		Runtime.getRuntime().addShutdownHook(new Thread()
+		{
+			public void run()
+			{
+				System.out.println("\nclosing db connection before shutting down program....");
+				schoolDbCommandExecutor.CloseDatabase();
+				System.out.println("db connection closed...");
+				System.out.println("shutting down...");
+			}
+		}
+		);
 		schoolDbCommandExecutor.ExecuteCommands();
 	}
 	
@@ -17,6 +31,13 @@ public class SchoolDbCommandExecutor
 	{
 		this.log = Logger.getLogger(SchoolDbCommandExecutor.class.getName());
 		this.log.setLevel(Level.ALL);
+		
+		System.out.println("attempting to open a db instance");
+		this.dbConnection = new DatabaseConnection(this.log);
+		System.out.println("attempting to establish db connection");
+		this.dbConnection.EstablistDatabaseConnection();
+		/*System.out.println("attempting to close db connection");
+		this.dbConnection.CloseConnection();*/
 	}
 	
 	private void ExecuteCommands()
@@ -49,6 +70,8 @@ public class SchoolDbCommandExecutor
 			{
 				System.out.println("Invalid command!!");
 			}
+			
+			
 		}
 	}
 	
@@ -447,6 +470,10 @@ public class SchoolDbCommandExecutor
 			log.warning(Constants.invalidCommand);
 			return null;
 		}
+	}
+	public void CloseDatabase()
+	{
+		this.dbConnection.CloseConnection();
 	}
 
 }

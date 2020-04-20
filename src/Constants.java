@@ -47,9 +47,38 @@ public class Constants
 	public static String usageOfCommand = "Usage of command ";
 	public static String space = " ";
 	public static String colon = ": ";
+	public static String semiColon = ";";
 	public static String leftSquareBrace = "[";
 	public static String rightSquareBrace = "]";
 	public static char quoteMark = '\"';
 	public static String emptyString = "";
+	public static String leftBrace = "(";
+	public static String rightBrace = ")";
+	
+	//sql queries
+	public static String createDb = "CREATE DATABASE IF NOT EXISTS ";
+	public static String use = "USE";
+	public static String schoolDb = "SchoolDb";
+	public static String createTable = "CREATE TABLE ";
+	public static String classString = "class";
+	public static String studentString = "student";
+	public static String categoryString = "category";
+	public static String assignmentString = "assignment";
+	public static String enrolledIn = "enrolled_in";
+	public static String containsString = "contains";
+	public static String receivesGradeForString = "receives_grade_for";
+	public static String integer = "INTEGER ";
+	public static String primaryKey = "PRIMARY KEY ";
+	public static String autoIncrement = "AUTO_INCREMENT";
+	public static String varchar = "VARCHAR";
+	public static String notNull = "NOT NULL";
+	public static String uniqueKey = "UNIQUE KEY ";
+	public static String foreignKey = "FOREIGN KEY ";
+	public static String references = "REFERENCES ";
+	public static String index = "INDEX ";
+	public static String fifty = "50";
+	public static String twoHundred = "200";
+	public static String oneHundred = "100";
+	public static String fiveHundred = "500";
 
 }
