@@ -1,3 +1,4 @@
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,9 +33,12 @@ public class SchoolDbCommandExecutor
 			if(line.equals("exit"))
 			{
 				exit = true;
+				continue;
 			}
 			
-			Command result = PrepareCommand(line);
+			String[] result = SplitCommandLine(line);
+			
+			/*Command result = PrepareCommand(line);
 			
 			if(result != null)
 			{
@@ -44,8 +48,162 @@ public class SchoolDbCommandExecutor
 			else
 			{
 				System.out.println("Invalid command!!");
+			}*/
+		}
+	}
+	
+	private int CountCharacterInString(String line, char character)
+	{
+		return (int)line.chars().filter(num -> num == character).count();
+	}
+	
+	private boolean IsStringQuoteValid(String line)
+	{
+		boolean didQuoteStart = false;
+		
+		for(int i=0;i<line.length();i++)
+		{
+			if(line.charAt(i) == Constants.quoteMark)
+			{
+				if(didQuoteStart)
+				{
+					if(i == line.length()-1)
+					{
+						continue;
+					}
+					else if(line.charAt(i+1) != Constants.space.charAt(0))
+					{
+						return false;
+					}
+					
+					didQuoteStart = false;
+				}
+				else
+				{
+					didQuoteStart = true;
+				}
 			}
 		}
+		return true;
+	}
+	
+	private String[] SplitCommandLine(String commandStr)
+	{
+		if(CountCharacterInString(commandStr, Constants.quoteMark) % 2 != 0)
+		{
+			System.out.println("Invalid");
+			return null;
+		}
+		if(!IsStringQuoteValid(commandStr))
+		{
+			System.out.println("Invalid2");
+			return null;
+		}
+		
+		String[] result = null;
+		
+		int startIndex = 0;
+		int endIndex = 0;
+		boolean didQuoteStart = false;
+		int resultCounter = 0;
+		System.out.println("Total string length: " + commandStr.length());
+		while(endIndex <= commandStr.length())
+		{
+			if(endIndex == commandStr.length())
+			{
+				if(!(startIndex > endIndex))
+				{
+					if(result == null)
+					{
+						result = new String[1];
+						result[resultCounter] = commandStr.substring(startIndex, endIndex);
+						startIndex = endIndex + 2;
+						resultCounter++;
+					}
+					else
+					{
+						result = Arrays.copyOf(result, resultCounter+1);
+						result[resultCounter] = commandStr.substring(startIndex, endIndex);
+						startIndex = endIndex + 2;
+						resultCounter++;
+					}
+				}
+			}
+			else if(commandStr.charAt(endIndex) == Constants.quoteMark)
+			{
+				if(didQuoteStart)
+				{
+					if(!(startIndex > endIndex))
+					{
+						if(result == null)
+						{
+							result = new String[1];
+							result[resultCounter] = commandStr.substring(startIndex+1, endIndex);
+							startIndex = endIndex + 2;
+							resultCounter++;
+						}
+						else
+						{
+							result = Arrays.copyOf(result, resultCounter+1);
+							result[resultCounter] = commandStr.substring(startIndex+1, endIndex);
+							startIndex = endIndex + 2;
+							resultCounter++;
+						}
+					}
+					didQuoteStart = false;
+				}
+				else
+				{
+					startIndex = endIndex;
+					didQuoteStart = true;
+				}
+			}
+			else if(commandStr.charAt(endIndex) == Constants.space.charAt(0))
+			{
+				if(!didQuoteStart)
+				{
+					if(!(startIndex > endIndex))
+					{
+						if(result == null)
+						{
+							result = new String[1];
+							result[resultCounter] = commandStr.substring(startIndex, endIndex);
+							startIndex = endIndex + 1;
+							resultCounter++;
+						}
+						else
+						{
+							result = Arrays.copyOf(result, resultCounter+1);
+							result[resultCounter] = commandStr.substring(startIndex, endIndex);
+							startIndex = endIndex + 1;
+							resultCounter++;
+						}
+					}
+				}
+			}
+			
+			if(result != null)
+			{
+				if(result[resultCounter-1].equals(Constants.space) || result[resultCounter-1].equals(Constants.emptyString))	//empty string
+				{
+					result = Arrays.copyOf(result, resultCounter-1);
+					resultCounter--;
+				}
+			}
+
+			endIndex++;
+		}
+		
+		System.out.println("Found length: " + resultCounter + ", actual: " + result.length);
+		
+		System.out.println("arguments:");
+		for(int i=0;i<result.length;i++)
+		{
+			System.out.println(result[i]);
+		}
+		
+		return result;
+		
 	}
 	
 	private Command PrepareCommand(String commandStr)

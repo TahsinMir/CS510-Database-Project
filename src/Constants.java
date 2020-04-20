@@ -49,5 +49,7 @@ public class Constants
 	public static String colon = ": ";
 	public static String leftSquareBrace = "[";
 	public static String rightSquareBrace = "]";
+	public static char quoteMark = '\"';
+	public static String emptyString = "";
 
 }
