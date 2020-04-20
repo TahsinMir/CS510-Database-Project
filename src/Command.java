@@ -196,7 +196,7 @@ public class Command
 	
 	public String toString()
 	{
-		return "commandType: " + this.commandType + ", courseNumber" + this.courseNumber + ", courseTerm: " + this.courseTerm
+		return "commandType: " + this.commandType + ", courseNumber: " + this.courseNumber + ", courseTerm: " + this.courseTerm
 				+ ",\n courseSectionNo: " + this.courseSectionNo + ", courseDescription: " + this.courseDescription
 				+ ",\n assignmentName: " + this.assignmentName + ", assignmentCategory: " + this.assignmentCategory
 				+ ",\n assignmentDescription: " + this.assignmentDescription + ", assignmentPointValue: " + this.assignmentPointValue

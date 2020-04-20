@@ -36,9 +36,9 @@ public class SchoolDbCommandExecutor
 				continue;
 			}
 			
-			String[] result = SplitCommandLine(line);
+			//String[] result = SplitCommandLine(line);
 			
-			/*Command result = PrepareCommand(line);
+			Command result = PrepareCommand(line);
 			
 			if(result != null)
 			{
@@ -48,7 +48,7 @@ public class SchoolDbCommandExecutor
 			else
 			{
 				System.out.println("Invalid command!!");
-			}*/
+			}
 		}
 	}
 	
@@ -199,7 +199,7 @@ public class SchoolDbCommandExecutor
 			endIndex++;
 		}
 		
-		System.out.println("Found length: " + resultCounter + ", actual: " + result.length);
+		System.out.println("Splitting commandline: Found length: " + resultCounter + ", actual: " + result.length);
 		
 		System.out.println("arguments:");
 		for(int i=0;i<result.length;i++)
@@ -213,7 +213,12 @@ public class SchoolDbCommandExecutor
 	
 	private Command PrepareCommand(String commandStr)
 	{
-		String[] splittedCommand = commandStr.split("\\s+");
+		String[] splittedCommand = SplitCommandLine(commandStr);
+		
+		if(splittedCommand == null)
+		{
+			return null;
+		}
 		
 		Command command = new Command();
 		if(splittedCommand[0].equals(Constants.newClass))
