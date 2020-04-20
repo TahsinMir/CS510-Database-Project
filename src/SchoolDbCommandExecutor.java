@@ -188,6 +188,11 @@ public class SchoolDbCommandExecutor
 				{
 					result = Arrays.copyOf(result, resultCounter-1);
 					resultCounter--;
+					
+					if(resultCounter == 0)
+					{
+						result = null;
+					}
 				}
 			}
 
