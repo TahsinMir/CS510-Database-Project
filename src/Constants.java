@@ -2,10 +2,12 @@
 public class Constants
 {
 	//all attributes
+	public static String courseId = "course_id";
 	public static String courseNumber = "course_number";
 	public static String term = "term";
 	public static String sectionNo = "section_no";
 	public static String description = "description";
+	public static String classDescription = "class_description";
 	public static String name = "name";
 	public static String pointValue = "point_value";
 	public static String userName = "user_name";
@@ -16,6 +18,9 @@ public class Constants
 	public static String last = "Last";
 	public static String usernamesubstring = "string";
 	public static String assignmentName = "assignmentname";
+	
+	//runtime attributes
+	public static String studentCount = "student_count";
 	
 	//class management
 	public static String newClass = "new-class";
@@ -46,14 +51,18 @@ public class Constants
 	public static String invalidCommand = "Invalid command";
 	public static String usageOfCommand = "Usage of command ";
 	public static String space = " ";
+	public static String dot = ".";
 	public static String colon = ": ";
 	public static String semiColon = ";";
 	public static String leftSquareBrace = "[";
 	public static String rightSquareBrace = "]";
 	public static char quoteMark = '\"';
+	public static String singleQuote = "'";
 	public static String emptyString = "";
 	public static String leftBrace = "(";
 	public static String rightBrace = ")";
+	public static String commaSpace = ", ";
+	public static String equals = "= ";
 	
 	//sql queries
 	public static String createDb = "CREATE DATABASE IF NOT EXISTS ";
@@ -80,5 +89,18 @@ public class Constants
 	public static String twoHundred = "200";
 	public static String oneHundred = "100";
 	public static String fiveHundred = "500";
+	public static String insertInto = "insert into ";
+	public static String values = "values ";
+	public static String select = "SELECT ";
+	public static String distinct = "DISTINCT ";
+	public static String from = "FROM ";
+	public static String count = "COUNT";
+	public static String as = "AS ";
+	public static String join = "JOIN ";
+	public static String on = "ON ";
+	public static String groupBy = "GROUP BY ";
+	//shorts forms
+	public static String classCL = "cl";
+	public static String enrolledInEN = "en";
 
 }

@@ -22,8 +22,7 @@ public class SchoolDbCommandExecutor
 				System.out.println("db connection closed...");
 				System.out.println("shutting down...");
 			}
-		}
-		);
+		});
 		schoolDbCommandExecutor.ExecuteCommands();
 	}
 	
@@ -59,12 +58,14 @@ public class SchoolDbCommandExecutor
 			
 			//String[] result = SplitCommandLine(line);
 			
-			Command result = PrepareCommand(line);
+			Command command = PrepareCommand(line);
 			
-			if(result != null)
+			if(command != null)
 			{
 				System.out.println("Valid command!");
-				System.out.println(result);
+				System.out.println(command);
+				
+				boolean executionResult = this.dbConnection.ExecuteQuery(command);
 			}
 			else
 			{
