@@ -12,6 +12,11 @@ public class DatabaseConnection
 	private String strDbPassword = "Databasemm0";
 	private Statement statement;
 	private String mostRecentTerm = null;
+	private String currentlyActiveClassId = null;
+	private String currentlyActiveClassCourseNumber = null;
+	private String currentlyActiveClassTerm = null;
+	private String currentlyActiveClassSectionNo = null;
+	private String currentlyActiveClassDescription = null;
 	public DatabaseConnection(Logger log)
 	{
 		this.log = log;
@@ -93,7 +98,10 @@ public class DatabaseConnection
 				  + Constants.values + Constants.leftBrace + Constants.singleQuote + command.GetCourseNumber() + Constants.singleQuote + Constants.commaSpace + Constants.singleQuote + command.GetCourseTerm() + Constants.singleQuote + Constants.commaSpace + command.GetCourseSectionNo() + Constants.commaSpace + Constants.singleQuote + command.GetCourseDescription() + Constants.singleQuote + Constants.rightBrace + Constants.semiColon;
 			System.out.println("Query string: " + query);
 		}
-		else if(command.GetCommandType().equals(Constants.listClasses))
+		else if(command.GetCommandType().equals(Constants.listClasses))	// join needs to be checked.........................
+			//..................................
+			//
+			//.....................................
 		{
 			//select c.course_number, c.term, c.section_no, count(en.student_id) as student_count
 			//from class c join enrolled_in en
@@ -114,7 +122,42 @@ public class DatabaseConnection
 		}
 		else if(command.GetCommandType().equals(Constants.showClass))
 		{
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
+			else
+			{
+				System.out.println("Currently Active Class: ");
+				System.out.print("Id: " + this.currentlyActiveClassId + ", course_number: " + this.currentlyActiveClassCourseNumber + ", term: " + this.currentlyActiveClassTerm
+								+ ",\n" + "section_no: " + this.currentlyActiveClassSectionNo + ", description: " + this.currentlyActiveClassDescription);
+			}			
+		}
+		//category and assignment management
+		else if(command.GetCommandType().equals(Constants.showCategories))
+		{
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
 			
+			//select con.category_id, cat.category_name, con.weight
+			//from class cl join contains con on cl.course_id = con.course_id
+			//join category cat on con.category_id = cat.category_id
+			//where cl.course_id = this.currentlyActiveClassId
+			query = "SELECT con.category_id, cat.category_name, con.weight FROM class cl JOIN contains con ON cl.course_id = con.course_id "
+				  + "JOIN category cat ON con.category_id = cat.category_id WHERE cl.course_id = " + this.currentlyActiveClassId;
+			
+			System.out.println("Query string: " + query);
+		}
+		else if(command.GetCommandType().equals(Constants.addCategory))
+		{
+			//add-category Name weight
+			//we have to add the name to category, get the id and then add the weight in contains
+			String tempQuery = "insert into"
+			query = "insert into contains (course_id, category_id, weight) values (" + this.currentlyActiveClassId + ", " + theCategoryId + ", " + command.GetCategoryWeightForCourse() + ");";
 		}
 
 		return true;

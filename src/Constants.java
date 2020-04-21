@@ -12,7 +12,8 @@ public class Constants
 	public static String pointValue = "point_value";
 	public static String userName = "user_name";
 	public static String weight = "weight";
-	public static String category = "category";
+	public static String categoryId = "category_id";
+	public static String categoryName = "category_name";
 	public static String studentId = "student_id";
 	public static String first = "First";
 	public static String last = "Last";
@@ -97,10 +98,13 @@ public class Constants
 	public static String count = "COUNT";
 	public static String as = "AS ";
 	public static String join = "JOIN ";
+	public static String left = "LEFT ";
 	public static String on = "ON ";
 	public static String groupBy = "GROUP BY ";
 	//shorts forms
 	public static String classCL = "cl";
 	public static String enrolledInEN = "en";
+	public static String containsCON = "con";
+	public static String categoryCAT = "cat";
 
 }
