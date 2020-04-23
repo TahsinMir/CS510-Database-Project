@@ -12,6 +12,7 @@ public class Constants
 	public static String pointValue = "point_value";
 	public static String userName = "user_name";
 	public static String weight = "weight";
+	public static String category = "category";
 	public static String categoryId = "category_id";
 	public static String categoryName = "category_name";
 	public static String studentId = "student_id";

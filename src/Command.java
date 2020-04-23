@@ -26,7 +26,21 @@ public class Command
 	
 	public Command()
 	{
-		
+		this.commandType = null;
+		this.courseNumber = null;
+		this.courseTerm = null;
+		this.courseSectionNo = null;
+		this.courseDescription = null;
+		this.assignmentName = null;
+		this.assignmentCategory = null;
+		this.assignmentDescription = null;
+		this.assignmentPointValue = null;
+		this.studentId = null;
+		this.studentFullName = null;
+		this.studentUserName = null;
+		this.categoryName = null;
+		this.categoryWeightForCourse = null;
+		this.studentReceivedGradeForCourse = null;
 	}
 	
 	public Command(String commandType)
