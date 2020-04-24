@@ -1,8 +1,14 @@
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 public class DatabaseConnection
@@ -604,8 +610,6 @@ public class DatabaseConnection
 				e.printStackTrace();
 				return false;
 			}
-			
-			
 		}
 		else if(command.GetCommandType().equals(Constants.showStudents))
 		{
@@ -677,8 +681,297 @@ public class DatabaseConnection
 				return false;
 			}
 		}
-		else if()
-
+		else if(command.GetCommandType().equals(Constants.grade))
+		{
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
+			
+			try
+			{
+				//check username validity
+				String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + command.GetStudentUserName() + ";";
+				ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
+				
+				int usernameCheckCounter = 0;
+				int studentId = -1;
+				while(usernameCheckResult.next())
+				{
+					usernameCheckCounter++;
+					if(usernameCheckCounter == 1)
+					{
+						studentId = usernameCheckResult.getInt("student_id");
+					}
+				}
+				if(usernameCheckCounter == 0)
+				{
+					log.warning("username does not exist..");
+					return false;
+				}
+				
+				//check if assignmentname exists
+				String assignmentnameCheckQuery = "SELECT * FROM assignment WHERE assignment_name='" + command.GetAssignmentName() + "' AND course_id=" + this.currentlyActiveClassId + ";";
+				ResultSet assignmentnameCheckResult = statement.executeQuery(assignmentnameCheckQuery);
+				
+				int counter = 0;
+				int pointValue = 0;
+				int assignmentId = 0;
+				while(assignmentnameCheckResult.next())
+				{
+					counter++;
+					if(counter == 1)
+					{
+						pointValue = assignmentnameCheckResult.getInt("point_value");
+						assignmentId = assignmentnameCheckResult.getInt("assignment_id");
+					}
+				}
+				
+				if(counter == 0)
+				{
+					log.warning("assignmentname does not exist..");
+					return false;
+				}
+				if(Integer.parseInt(command.GetStudentReceivedGradeForCourse()) > pointValue)
+				{
+					log.warning("Point exceeds the maximum possible point!!");
+					return false;
+				}
+				
+				//everything is okay, now we check if the student already has a grade for this assignment
+				String checkAssignmentAlreadyGradedQuery = "SELECT * FROM receives_grade_for WHERE assignment_id=" + assignmentId
+														 + " AND student_id=" + studentId + ";";
+				ResultSet checkAssignmentAlreadyGradedResult = statement.executeQuery(checkAssignmentAlreadyGradedQuery);
+				if(checkAssignmentAlreadyGradedResult.next())	//this mean grade already exist, we need to update
+				{
+					String resultQuery = "UPDATE receives_grade_for SET grade=" + command.GetStudentReceivedGradeForCourse() + "' WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
+					statement.executeUpdate(resultQuery);
+					log.info("student grade updated!!");
+					return true;
+				}
+				else	//otherwise we just add the grade
+				{
+					String resultQuery = "insert into receives_grade_for (student_id, assignment_id, grade) values (" + studentId
+									   + ", " + assignmentId + ", " + command.GetStudentReceivedGradeForCourse() + ");";
+					statement.executeUpdate(resultQuery);
+					log.info("student grade added!!");
+					return true;
+				}
+				
+			}
+			catch (SQLException e)
+			{
+				log.warning("SQLException occured during adding student grade...");
+				e.printStackTrace();
+				return false;
+			}
+			
+			
+		}
+		else if(command.GetCommandType().equals(Constants.studentGrades))
+		{
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
+			
+			try
+			{
+				//check username validity
+				String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + command.GetStudentUserName() + ";";
+				ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
+				
+				int usernameCheckCounter = 0;
+				int studentId = -1;
+				while(usernameCheckResult.next())
+				{
+					usernameCheckCounter++;
+					if(usernameCheckCounter == 1)
+					{
+						studentId = usernameCheckResult.getInt("student_id");
+					}
+				}
+				if(usernameCheckCounter == 0)
+				{
+					log.warning("username does not exist..");
+					return false;
+				}
+				
+				//now first report grade for each assignment
+				String eachAssignmentQuery = "SELECT s.student_id, s.student_name, cat.category_name, a.assignment_name, a.point_value, rgf.grade FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id "
+										   + "JOIN assignment a ON rgf.assignment_id=a.assignment_id JOIN category cat ON a.category_id=cat.category_id WHERE a.course_id=" + this.currentlyActiveClassId
+										   + " AND s.student_id=" + studentId + ";";
+				ResultSet eachAssignmentResult = statement.executeQuery(eachAssignmentQuery);
+				
+				System.out.print("handle the printing");
+				
+				String categoryWiseTotalQuery = "SELECT cat.category_name, SUM(rgf.grade) as total FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
+											  + "WHERE a.course_id=" + this.currentlyActiveClassId + " AND rgf.student_id=" + studentId + " GROUP BY cat.category_name;";
+				System.out.print("handle the printing2");
+				
+				return true;
+			}
+			catch(SQLException e)
+			{
+				log.warning("SQLException occured during showing student grades...");
+				e.printStackTrace();
+				return false;
+			}
+		}
+		else if(command.GetCommandType().equals(Constants.gradebook))
+		{
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
+			
+			try
+			{
+				String resultQuery = "SELECT s.student_id, SUM(rgf.grade) FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
+						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id;";
+				ResultSet gradeResult = statement.executeQuery(resultQuery);
+				System.out.println("handle the printing3");
+				return true;
+			}
+			catch (SQLException e)
+			{
+				log.warning("SQLException occured during showing gradebook...");
+				e.printStackTrace();
+				return false;
+			} 			
+		}
+		//extra credit
+		else if(command.GetCommandType().equals(Constants.importGrades))
+		{
+			//check activated class
+			if(this.currentlyActiveClassId == null)
+			{
+				log.warning("No Active class...");
+				return false;
+			}
+			try
+			{
+				//chack if assignment exists
+				String assignmentnameCheckQuery = "SELECT * FROM assignment WHERE assignment_name='" + command.GetAssignmentName() + "' AND course_id=" + this.currentlyActiveClassId + ";";
+				ResultSet assignmentnameCheckResult = statement.executeQuery(assignmentnameCheckQuery);
+				
+				int assignmentCheckCounter = 0;
+				int pointValue = 0;
+				int assignmentId = 0;
+				while(assignmentnameCheckResult.next())
+				{
+					assignmentCheckCounter++;
+					if(assignmentCheckCounter == 1)
+					{
+						pointValue = assignmentnameCheckResult.getInt("point_value");
+						assignmentId = assignmentnameCheckResult.getInt("assignment_id");
+					}
+				}
+				
+				if(assignmentCheckCounter == 0)
+				{
+					log.warning("assignmentname does not exist..");
+					return false;
+				}
+				//everything is okay so now insert the file rows
+				File file = new File(command.GetFileName());
+		        FileReader fr = new FileReader(file);
+		        BufferedReader br = new BufferedReader(fr);
+		        
+		        String delimiter = ",";
+		        String line = "";
+		        String[] tempArr;
+		        String userName = null;
+		        String grade = null;
+		        while((line = br.readLine()) != null)
+		        {
+		           tempArr = line.split(delimiter);
+		           int counter = 0;
+		           for(String tempStr : tempArr)
+		           {
+		        	   if(counter == 0)
+		        	   {
+		        		   userName = tempStr;
+		        	   }
+		        	   else if(counter == 1)
+		        	   {
+		        		   grade = tempStr;
+		        	   }
+		            }
+		           	System.out.println("username: " + userName + ", grade:" + grade);
+		           	//check username validity
+		           	String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + userName + ";";
+					ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
+					
+					int usernameCheckCounter = 0;
+					int studentId = -1;
+					while(usernameCheckResult.next())
+					{
+						usernameCheckCounter++;
+						if(usernameCheckCounter == 1)
+						{
+							studentId = usernameCheckResult.getInt("student_id");
+						}
+					}
+					if(usernameCheckCounter == 0)
+					{
+						log.warning("username does not exist..");
+						continue;
+					}
+					//check grade limit
+					if(Integer.parseInt(grade) > pointValue)
+					{
+						log.warning("Point exceeds the maximum possible point!!");
+						continue;
+					}
+					//everything is okay, now we check if the student already has a grade for this assignment
+					String checkAssignmentAlreadyGradedQuery = "SELECT * FROM receives_grade_for WHERE assignment_id=" + assignmentId
+															 + " AND student_id=" + studentId + ";";
+					ResultSet checkAssignmentAlreadyGradedResult = statement.executeQuery(checkAssignmentAlreadyGradedQuery);
+					if(checkAssignmentAlreadyGradedResult.next())	//this means grade already exists, we need to update
+					{
+						String resultQuery = "UPDATE receives_grade_for SET grade=" + grade + "' WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
+						statement.executeUpdate(resultQuery);
+						log.info("student grade updated!!");
+					}
+					else	//otherwise we just add the grade
+					{
+						String resultQuery = "insert into receives_grade_for (student_id, assignment_id, grade) values (" + studentId
+										   + ", " + assignmentId + ", " + grade + ");";
+						statement.executeUpdate(resultQuery);
+						log.info("student grade added!!");
+					}
+		            TimeUnit.MILLISECONDS.sleep(200);
+		            System.out.println();
+		         }
+		         br.close();
+			}
+			catch (FileNotFoundException e)
+			{
+				log.warning("FileNotFoundException occured during reading CSV file...");
+				e.printStackTrace();
+				return false;
+			}
+			catch(IOException e)
+			{
+				log.warning("IOException occured during reading CSV file...");
+				e.printStackTrace();
+				return false;
+			}
+			catch (SQLException e)
+			{
+				log.warning("SQLException occured during reading CSV file...");
+				e.printStackTrace();
+			}
+			catch (InterruptedException e)
+			{
+				log.warning("InterruptedException occured during reading CSV file...");
+				e.printStackTrace();
+			}
+		}
 		return true;
 			
 	}

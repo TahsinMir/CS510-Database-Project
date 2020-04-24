@@ -24,6 +24,8 @@ public class Command
 	
 	private String usernameSubstring;
 	
+	private String fileName;
+	
 	public Command()
 	{
 		this.commandType = null;
@@ -41,6 +43,7 @@ public class Command
 		this.categoryName = null;
 		this.categoryWeightForCourse = null;
 		this.studentReceivedGradeForCourse = null;
+		this.fileName = null;
 	}
 	
 	public Command(String commandType)
@@ -208,6 +211,15 @@ public class Command
 		this.usernameSubstring = usernameSubstring;
 	}
 	
+	//get, set of fileName
+	public String GetFileName()
+	{
+		return this.fileName;
+	}
+	public void SetFileName(String fileName)
+	{
+		this.fileName = fileName;
+	}
 	public String toString()
 	{
 		return "commandType: " + this.commandType + ", courseNumber: " + this.courseNumber + ", courseTerm: " + this.courseTerm

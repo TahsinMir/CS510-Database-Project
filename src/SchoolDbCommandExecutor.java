@@ -466,6 +466,27 @@ public class SchoolDbCommandExecutor
 			command.SetCommandType(Constants.gradebook);
 			return command;
 		}
+		else if(splittedCommand[0].equals(Constants.importGrades))
+		{
+			if(splittedCommand.length != 3)
+			{
+				log.warning(Constants.invalidUsage + Constants.importGrades);
+				log.warning(Constants.usageOfCommand + Constants.importGrades + Constants.colon + Constants.importGrades
+						   +Constants.space + Constants.assignmentName + Constants.space + Constants.fileName);
+				return null;
+			}
+			
+			if(!splittedCommand[2].endsWith(".csv"))
+			{
+				log.warning("Invalid file name!");
+				return null;
+			}
+			
+			command.SetCommandType(Constants.importGrades);
+			command.SetAssignmentName(splittedCommand[1]);
+			command.SetFileName(splittedCommand[2]);
+			return command;
+		}
 		else
 		{
 			log.warning(Constants.invalidCommand);

@@ -20,6 +20,7 @@ public class Constants
 	public static String last = "Last";
 	public static String usernamesubstring = "string";
 	public static String assignmentName = "assignmentname";
+	public static String fileName = "file-name";
 	
 	//runtime attributes
 	public static String studentCount = "student_count";
