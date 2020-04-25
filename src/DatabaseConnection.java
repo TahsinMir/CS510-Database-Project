@@ -662,7 +662,7 @@ public class DatabaseConnection
 					{
 						counter++;
 						
-						System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getShort("student_name"));
+						System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getString("student_name"));
 					}
 					if(counter == 0)
 					{
@@ -676,6 +676,7 @@ public class DatabaseConnection
 				}
 				else	//show-students string
 				{
+					//TODO:: this is not complete
 					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st "
 											 + "WHERE en.course_id=" + this.currentlyActiveClassId + " AND (st.user_name LIKE '%" + command.GetUsernameSubstring() + "%' OR st.student_name LIKE '%" + command.GetUsernameSubstring() + "%');";
 					ResultSet showStudentsResult = statement.executeQuery(showStudentsQuery);
@@ -717,7 +718,7 @@ public class DatabaseConnection
 			try
 			{
 				//check username validity
-				String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + command.GetStudentUserName() + ";";
+				String usernameCheckQuery = "SELECT * FROM student WHERE user_name='" + command.GetStudentUserName() + "';";
 				ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
 				
 				int usernameCheckCounter = 0;
@@ -805,7 +806,7 @@ public class DatabaseConnection
 			try
 			{
 				//check username validity
-				String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + command.GetStudentUserName() + ";";
+				String usernameCheckQuery = "SELECT * FROM student WHERE user_name='" + command.GetStudentUserName() + "';";
 				ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
 				
 				int usernameCheckCounter = 0;
@@ -830,11 +831,20 @@ public class DatabaseConnection
 										   + " AND s.student_id=" + studentId + ";";
 				ResultSet eachAssignmentResult = statement.executeQuery(eachAssignmentQuery);
 				
-				System.out.print("handle the printing");
+				while(eachAssignmentResult.next())
+				{
+					System.out.println(eachAssignmentResult.getInt("student_id") + ", " + eachAssignmentResult.getString("student_name") + ", " + eachAssignmentResult.getString("assignment_name") + ", " + eachAssignmentResult.getInt("point_value") + ", " + eachAssignmentResult.getInt("grade"));
+				}
+				
 				
 				String categoryWiseTotalQuery = "SELECT cat.category_name, SUM(rgf.grade) as total FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
 											  + "WHERE a.course_id=" + this.currentlyActiveClassId + " AND rgf.student_id=" + studentId + " GROUP BY cat.category_name;";
-				System.out.print("handle the printing2");
+				
+				ResultSet categoryWiseTotalResult = statement.executeQuery(categoryWiseTotalQuery);
+				while(categoryWiseTotalResult.next())
+				{
+					System.out.println(categoryWiseTotalResult.getString("category_name") + ", " + categoryWiseTotalResult.getInt("total"));
+				}
 				
 				return true;
 			}
@@ -855,10 +865,14 @@ public class DatabaseConnection
 			
 			try
 			{
-				String resultQuery = "SELECT s.student_id, SUM(rgf.grade) FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
+				String resultQuery = "SELECT s.student_id, SUM(rgf.grade) as total FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
 						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id;";
 				ResultSet gradeResult = statement.executeQuery(resultQuery);
-				System.out.println("handle the printing3");
+				
+				while(gradeResult.next())
+				{
+					System.out.println(gradeResult.getInt("student_id") + ", " + gradeResult.getInt("total"));
+				}
 				return true;
 			}
 			catch (SQLException e)
@@ -914,9 +928,11 @@ public class DatabaseConnection
 		        while((line = br.readLine()) != null)
 		        {
 		           tempArr = line.split(delimiter);
+		           System.out.println("total line: " + line);
 		           int counter = 0;
 		           for(String tempStr : tempArr)
 		           {
+		        	   System.out.println("counter: " + counter);
 		        	   if(counter == 0)
 		        	   {
 		        		   userName = tempStr;
@@ -925,10 +941,12 @@ public class DatabaseConnection
 		        	   {
 		        		   grade = tempStr;
 		        	   }
+		        	   counter++;
 		            }
 		           	System.out.println("username: " + userName + ", grade:" + grade);
 		           	//check username validity
-		           	String usernameCheckQuery = "SELECT * FROM student WHERE user_name=" + userName + ";";
+		           	String usernameCheckQuery = "SELECT * FROM student WHERE user_name='" + userName + "';";
+		           	System.out.println("usernameCheckQuery: " + usernameCheckQuery);
 					ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
 					
 					int usernameCheckCounter = 0;
@@ -952,13 +970,15 @@ public class DatabaseConnection
 						log.warning("Point exceeds the maximum possible point!!");
 						continue;
 					}
+					
+					System.out.println("username: " + userName + ", and grade: " + grade);
 					//everything is okay, now we check if the student already has a grade for this assignment
 					String checkAssignmentAlreadyGradedQuery = "SELECT * FROM receives_grade_for WHERE assignment_id=" + assignmentId
 															 + " AND student_id=" + studentId + ";";
 					ResultSet checkAssignmentAlreadyGradedResult = statement.executeQuery(checkAssignmentAlreadyGradedQuery);
 					if(checkAssignmentAlreadyGradedResult.next())	//this means grade already exists, we need to update
 					{
-						String resultQuery = "UPDATE receives_grade_for SET grade=" + grade + "' WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
+						String resultQuery = "UPDATE receives_grade_for SET grade=" + grade + " WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
 						statement.executeUpdate(resultQuery);
 						log.info("student grade updated!!");
 					}
