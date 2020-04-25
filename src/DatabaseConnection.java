@@ -348,45 +348,53 @@ public class DatabaseConnection
 			//first checking whether this category exists
 			try
 			{
+				System.out.println("first checking if the category exists...");
 				String categoryCheckQuery = "SELECT * FROM category WHERE category_name='" + command.GetCategoryName() + "';";
 				ResultSet categoryCheckResult = statement.executeQuery(categoryCheckQuery);
 				
 				String currentCategoryId = null;
 				if(categoryCheckResult.next())	//category exists in category table, get the id
 				{
+					System.out.println("category exist!");
 					currentCategoryId = String.valueOf(categoryCheckResult.getInt("category_id"));
 				}
 				else	//category doesn't exist in the category table, so add there first
 				{
-					String addCategoryQuery = "insert into category (category_name) values ('" + this.currentlyActiveClassId + "');";
+					System.out.println("category does not exist!");
+					System.out.println("adding the category first");
+					String addCategoryQuery = "insert into category (category_name) values ('" + command.GetCategoryName() + "');";
+					System.out.println("query = " + addCategoryQuery);
 					statement.executeUpdate(addCategoryQuery);
 					
 					categoryCheckResult = statement.executeQuery(categoryCheckQuery);
+					boolean categoryCheckBoolResult = categoryCheckResult.next();
 					currentCategoryId = String.valueOf(categoryCheckResult.getInt("category_id"));
+					System.out.println("id: " + currentCategoryId);
 				}
 				
-				if(categoryCheckResult.next())	//now the category exists no matter what, we can just add the weight in contains
+				//now the category exists no matter what, we can just add the weight in contains
+				//TODO: do we update or not?
+				//now we have to check whether this category is already exists in contains for this class
+				String categoryClassContainCheckQuery = "SELECT * FROM contains WHERE course_id=" + this.currentlyActiveClassId
+												      + " AND category_id=" + currentCategoryId + ";";
+				ResultSet categoryClassContainCheckResult = statement.executeQuery(categoryClassContainCheckQuery);
+				
+				if(categoryClassContainCheckResult.next())	//this category is already added for this class
 				{
-					//now we have to check whether this category is already exists in contains for this class
-					String categoryClassContainCheckQuery = "SELECT * FROM contains WHERE course_id=" + this.currentlyActiveClassId
-													      + " AND category_id=" + currentCategoryId + ";";
-					ResultSet categoryClassContainCheckResult = statement.executeQuery(categoryClassContainCheckQuery);
-					
-					if(categoryClassContainCheckResult.next())	//this category is already added for this class
-					{
-						//TODO:: should we replace?
-						log.warning("This catehory already exists for this class");
-						return false;
-					}
-					
-					//otherwise now we can add this category to contains
-					String insertCategoryWeightQuery = "insert into contains (course_id, category_id, weight) values (" + this.currentlyActiveClassId
-												+ ", " + currentCategoryId + ", " + command.GetCategoryWeightForCourse() + ");";
-					
-					statement.executeUpdate(insertCategoryWeightQuery);
-					log.info("Given category added for given class");
-					return true;
+					//TODO:: should we replace?
+					log.warning("This catehory already exists for this class");
+					return false;
 				}
+				
+				System.out.print("inserting into contains");
+				
+				//otherwise now we can add this category to contains
+				String insertCategoryWeightQuery = "insert into contains (course_id, category_id, weight) values (" + this.currentlyActiveClassId
+											+ ", " + currentCategoryId + ", " + command.GetCategoryWeightForCourse() + ");";
+				
+				statement.executeUpdate(insertCategoryWeightQuery);
+				log.info("Given category added for given class");
+				return true;
 			}
 			catch (SQLException e)
 			{
@@ -408,7 +416,7 @@ public class DatabaseConnection
 			{
 				String showAssignmentQuery = "SELECT cat.category_id, cat.category_name, asn.assignment_id, asn.assignment_name, asn.point_value "
 										   + "FROM assignment asn JOIN category cat ON asn.category_id=cat.category_id "
-										   + "WHERE asn.course_id=" + this.currentlyActiveClassId + " GROUP BY cat.category_id, cat.category_name;";
+										   + "WHERE asn.course_id=" + this.currentlyActiveClassId + ";";
 				ResultSet result = statement.executeQuery(showAssignmentQuery);
 				
 				log.info("Showing assignments for the current class...");
@@ -452,19 +460,29 @@ public class DatabaseConnection
 			{
 				//TODO:: should we check for already existance? now we are doing that
 				String assignmentExistanceCheckQuery = "SELECT * FROM assignment WHERE course_id=" + this.currentlyActiveClassId
-													 + " AND assignment_name=" + command.GetAssignmentName() + ";";
+													 + " AND assignment_name='" + command.GetAssignmentName() + "';";
+				
+				System.out.println("assignmentExistanceCheckQuery = " + assignmentExistanceCheckQuery);
 				ResultSet assignmentExistanceCheckResult = statement.executeQuery(assignmentExistanceCheckQuery);
 				
 				if(assignmentExistanceCheckResult.next())
 				{
-					log.warning("Assignment with same name already exists in this course!");
-					return false;
+					int assignmentId = assignmentExistanceCheckResult.getInt("assignment_id");
+					int categoryId = assignmentExistanceCheckResult.getInt("category_id");
+					log.warning("Assignment with same name already exists in this course! replacing it");
+					String updateAssignmentQuery = "UPDATE assignment SET point_value=" + command.GetAssignmentPointValue() + ", assignment_description='" + command.GetAssignmentDescription() + "' WHERE assignment_id=" + assignmentId + " AND course_id=" + this.currentlyActiveClassId + " AND category_id=" + categoryId + ";";
+					System.out.println("updateAssignmentQuery: " + updateAssignmentQuery);
+					statement.executeUpdate(updateAssignmentQuery);
+					return true;
 				}
 				
 				//if it doesn't already exists, we add it
 				//first we need the category id
-				String getCategoryQuery = "SELECT * FROM contains con JOIN category cat ON con.category=cat.category_id "
-										+ "WHERE cat.category_name=" + command.GetAssignmentCategory() + " AND con.course_id=" + this.currentlyActiveClassId + ";";
+				System.out.println("Assignment doesnt already exist");
+				String getCategoryQuery = "SELECT * FROM contains con JOIN category cat ON con.category_id=cat.category_id "
+										+ "WHERE cat.category_name='" + command.GetAssignmentCategory() + "' AND con.course_id=" + this.currentlyActiveClassId + ";";
+				System.out.println("getCategoryQuery: " + getCategoryQuery);
+				
 				ResultSet getCategoryResult = statement.executeQuery(getCategoryQuery);
 				
 				String currentCategoryId = null;
@@ -482,6 +500,8 @@ public class DatabaseConnection
 				String addAssignmentQuery = "insert into assignment (assignment_name, assignment_description, point_value, course_id, category_id) values ('"
 										  + command.GetAssignmentName() + "', '" + command.GetAssignmentDescription() + "', " + command.GetAssignmentPointValue()
 										  + ", " + this.currentlyActiveClassId + ", " + currentCategoryId + ");";
+				System.out.println("addAssignmentQuery: " + addAssignmentQuery);
+				statement.executeUpdate(addAssignmentQuery);
 				return true;
 			}
 			catch (SQLException e)
