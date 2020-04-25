@@ -94,7 +94,6 @@ public class DatabaseConnection
 	
 	public boolean ExecuteQuery(Command command)
 	{
-		//statement.executeQuery(sql);
 		String query;
 		
 		//class management
@@ -106,33 +105,33 @@ public class DatabaseConnection
 			{
 				String existQuery = "SELECT * FROM class WHERE course_number='" + command.GetCourseNumber() + "' AND term='" + command.GetCourseTerm()
 								  + "' AND section_no='" + command.GetCourseSectionNo() + "';";
-				System.out.println("existQuery string: " + existQuery);
 				ResultSet checkExist = this.statement.executeQuery(existQuery);
 				
 				if(checkExist.next())
 				{
-					log.warning("Information about same class already exist!");
+					log.warning(Constants.classAlreadyExists);
 					return false;
 				}
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during new class insertion...");
+				log.warning(Constants.sqlExceptionOccured + Constants.newClassInsertion);
 				e.printStackTrace();
 				return false;
 			}
 			
+			//since everything is okay, we can proceed to insert the new class.
 			try
 			{
 				query = "insert into class (course_number, term, section_no, class_description) values ('" + command.GetCourseNumber()
 					  + "', '" + command.GetCourseTerm() + "', " + command.GetCourseSectionNo() + ", '" + command.GetCourseDescription() + "');";
-				System.out.println("Query string: " + query);
 				statement.executeUpdate(query);
+				log.info("New class info inserted!");
 				return true;
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during new class insertion...");
+				log.warning(Constants.sqlExceptionOccured + Constants.newClassInsertion);
 				e.printStackTrace();
 				return false;
 			}
@@ -141,8 +140,7 @@ public class DatabaseConnection
 		{			
 			try
 			{
-				query = "SELECT cl.course_number, cl.term, cl.section_no, COUNT(en.student_id) AS student_count, FROM class cl LEFT JOIN enrolled_in en ON cl.course_id = en.course_id GROUP BY cl.course_number, cl.term, cl.section_no;";
-				System.out.println("Query string: " + query);
+				query = "SELECT cl.course_number, cl.term, cl.section_no, COUNT(en.student_id) AS student_count FROM class cl LEFT JOIN enrolled_in en ON cl.course_id = en.course_id GROUP BY cl.course_number, cl.term, cl.section_no;";
 				
 				ResultSet result = statement.executeQuery(query);
 				
@@ -157,22 +155,25 @@ public class DatabaseConnection
 				
 				if(!isResultFound)
 				{
-					log.warning("No data found!");
+					log.warning(Constants.noDataFound);
 					return false;
 				}
 				return true;
-			} catch (SQLException e) {
-				log.warning("SQLException occured during retriving class list...");
+			}
+			catch (SQLException e)
+			{
+				log.warning(Constants.sqlExceptionOccured + Constants.retrieveClassList);
 				e.printStackTrace();
 				return false;
 			}
-			
 		}
 		else if(command.GetCommandType().equals(Constants.selectClass))
 		{
 			if(command.GetCourseTerm() == null && command.GetCourseSectionNo() == null)	//only course_number given
 			{
 				// TODO:: how do we get the recent term
+				log.warning("Not yet implemented!");
+				return false;
 			}
 			else if(command.GetCourseSectionNo() == null)	//course_number, term given
 			{				
@@ -180,7 +181,6 @@ public class DatabaseConnection
 				{
 					query = "SELECT * FROM class WHERE course_number='" + command.GetCourseNumber() + "' AND term='"
 						  + command.GetCourseTerm() + "';";
-					System.out.println("select-class type 2 query: " + query);
 					
 					ResultSet result = statement.executeQuery(query);
 					
@@ -190,7 +190,7 @@ public class DatabaseConnection
 					String tempCurrentlyActiveClassSectionNo = null;
 					String tempCurrentlyActiveClassDescription = null;
 					
-					log.info("Available classes with given information:");
+					log.info(Constants.availableClasses);
 					int counter = 0;
 					while(result.next())
 					{
@@ -210,12 +210,12 @@ public class DatabaseConnection
 					
 					if(counter == 0)
 					{
-						log.warning("No class found..");
+						log.warning(Constants.noClassFound);
 						return false;
 					}
 					if(counter > 1)
 					{
-						log.warning("too many classes exist by the given information, cannot activate class...");
+						log.warning(Constants.tooManyClassCannotActivateClass);
 						return false;
 					}
 					
@@ -230,7 +230,7 @@ public class DatabaseConnection
 				}
 				catch (SQLException e)
 				{
-					log.warning("SQLException occured during activating class...");
+					log.warning(Constants.sqlExceptionOccured + Constants.activateClass);
 					e.printStackTrace();
 					return false;
 				} 
@@ -241,7 +241,7 @@ public class DatabaseConnection
 				{
 					query = "SELECT * FROM class WHERE course_number='" + command.GetCourseNumber() + "' AND term='"
 						  + command.GetCourseTerm() + "' AND section_no=" + command.GetCourseSectionNo() + ";";
-					System.out.println("select-class type 2 query: " + query);
+					
 					ResultSet result = statement.executeQuery(query);
 					
 					if(result.next())
@@ -257,14 +257,15 @@ public class DatabaseConnection
 					}
 					else
 					{
-						log.warning("No class found..");
+						log.warning(Constants.noClassFound);
 						return false;
 					}
 				}
 				catch (SQLException e)
 				{
-					log.warning("SQLException occured during activating class...");
+					log.warning(Constants.sqlExceptionOccured + Constants.activateClass);
 					e.printStackTrace();
+					return false;
 				}
 			}
 		}
@@ -272,7 +273,7 @@ public class DatabaseConnection
 		{
 			if(this.currentlyActiveClassId == null)
 			{
-				log.warning("No Active class...");
+				log.warning(Constants.noActiveClass);
 				return false;
 			}
 			else

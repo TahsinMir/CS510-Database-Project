@@ -53,6 +53,8 @@ public class SchoolDbCommandExecutor
 			if(line.equals("exit"))
 			{
 				exit = true;
+				log.info("closing database connection");
+				this.CloseDatabase();
 				continue;
 			}
 			

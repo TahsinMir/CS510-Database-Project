@@ -108,5 +108,19 @@ public class Constants
 	public static String enrolledInEN = "en";
 	public static String containsCON = "con";
 	public static String categoryCAT = "cat";
+	
+	//log.info
+	public static String availableClasses = "Available classes with given information:";
+	
+	//log.warning
+	public static String classAlreadyExists = "Information about same class already exist!";
+	public static String noDataFound = "No data found!";
+	public static String noClassFound = "No class found..";
+	public static String tooManyClassCannotActivateClass = "too many classes exist by the given information, cannot activate class...";
+	public static String noActiveClass = "No Active class...";
+	public static String sqlExceptionOccured = "SQLException occured during ";
+	public static String newClassInsertion = "new class insertion...";
+	public static String retrieveClassList = "retriving class list...";
+	public static String activateClass = "activating class...";
 
 }
