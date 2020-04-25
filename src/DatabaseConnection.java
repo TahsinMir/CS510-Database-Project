@@ -525,15 +525,19 @@ public class DatabaseConnection
 			try
 			{
 				//check if the student already exists
-				String studentExistsCheckQuery = "SELECT * FROM student WHERE user_name=" + command.GetStudentUserName();
+				String studentExistsCheckQuery = "SELECT * FROM student WHERE user_name='" + command.GetStudentUserName() + "';";
+				System.out.println("studentExistsCheckQuery: " + studentExistsCheckQuery);
 				ResultSet studentExistsCheckResult = statement.executeQuery(studentExistsCheckQuery);
 				
 				if(studentExistsCheckResult.next())	//user already exists
 				{
+					System.out.println("student already exists");
+					System.out.println("just enrolling requuired");
+					int studentId = studentExistsCheckResult.getInt("student_id");
 					if(command.GetStudentId() == null)	//add-student username
 					{
 						//check if the student is already enrolled
-						String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
+						//String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
 						String checkEnrollmentStatusQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId
 														  + " AND student_id=" + studentId + ";";
 						
@@ -557,7 +561,7 @@ public class DatabaseConnection
 						if(studentExistsCheckResult.getString("student_name").equals(command.GetStudentFullName()))	//names match, so just enroll
 						{
 							//check if the student is already enrolled
-							String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
+							//String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
 							String checkEnrollmentStatusQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId
 															  + " AND student_id=" + studentId + ";";
 							
@@ -583,7 +587,7 @@ public class DatabaseConnection
 							
 							// then do the rest as before
 							//check if the student is already enrolled
-							String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
+							//String studentId = String.valueOf(studentExistsCheckResult.getInt("student_id"));
 							String checkEnrollmentStatusQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId
 															  + " AND student_id=" + studentId + ";";
 							
