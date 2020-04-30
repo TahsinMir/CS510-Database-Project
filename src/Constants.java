@@ -168,5 +168,6 @@ public class Constants
 	//
 	public static String from = "from ";
 	public static String to = " to ";
-
+	public static String assignmentList = "assignment-list";
+	public static String byCategory = "by-category";
 }

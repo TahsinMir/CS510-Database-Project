@@ -194,7 +194,7 @@ public class DatabaseConnection
 				}
 				else
 				{
-					this.PrintData(Constants.listClasses, resultTable);//, tableCounter, 4);
+					this.PrintData(Constants.listClasses, resultTable, null);//, tableCounter, 4);
 				}
 				return true;
 			}
@@ -262,7 +262,7 @@ public class DatabaseConnection
 					}
 					
 					log.info(Constants.availableClasses);
-					this.PrintData(Constants.selectClass, resultTable);
+					this.PrintData(Constants.selectClass, resultTable, null);
 					
 					if(counter == 0)
 					{
@@ -338,7 +338,7 @@ public class DatabaseConnection
 					}
 					
 					log.info(Constants.availableClasses);
-					this.PrintData(Constants.selectClass, resultTable);
+					this.PrintData(Constants.selectClass, resultTable, null);
 					
 					if(counter == 0)
 					{
@@ -417,7 +417,7 @@ public class DatabaseConnection
 				resultTable[0][1] = new String(this.currentlyActiveClassCourseNumber);
 				resultTable[0][2] = new String(this.currentlyActiveClassTerm);
 				resultTable[0][3] = new String(String.valueOf(currentlyActiveClassSectionNo));
-				this.PrintData(Constants.showClass, resultTable);
+				this.PrintData(Constants.showClass, resultTable, null);
 				/*System.out.print("Id: " + this.currentlyActiveClassId + ", course_number: " + this.currentlyActiveClassCourseNumber + ", term: " + this.currentlyActiveClassTerm
 								+ ",\n" + "section_no: " + this.currentlyActiveClassSectionNo + ", description: " + this.currentlyActiveClassDescription);*/
 				System.out.println(Constants.activatedClassDescription + this.currentlyActiveClassDescription);
@@ -468,7 +468,7 @@ public class DatabaseConnection
 					//System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", " + result.getInt("weight"));
 				}
 				
-				this.PrintData(Constants.showCategories, resultTable);
+				this.PrintData(Constants.showCategories, resultTable, null);
 				if(counter == 0)
 				{
 					log.warning("No data found..");
@@ -634,7 +634,7 @@ public class DatabaseConnection
 				}
 				else
 				{
-					this.PrintData(Constants.showAssignment, resultTable);
+					this.PrintData(Constants.showAssignment, resultTable, null);
 					return true;
 				}
 			}
@@ -902,7 +902,7 @@ public class DatabaseConnection
 					}
 					else
 					{
-						this.PrintData(Constants.showStudents, resultTable);
+						this.PrintData(Constants.showStudents, resultTable, null);
 						return true;
 					}
 				}
@@ -942,7 +942,7 @@ public class DatabaseConnection
 					}
 					else
 					{
-						this.PrintData(Constants.showStudents, resultTable);
+						this.PrintData(Constants.showStudents, resultTable, null);
 						return true;
 					}
 				}
@@ -1079,31 +1079,87 @@ public class DatabaseConnection
 				}
 				if(usernameCheckCounter == 0)
 				{
-					log.warning("username does not exist..");
+					log.warning(Constants.usernameDoesNotExist);
 					return false;
 				}
-				
+
+				//checking if the student is enrolled to the current class
+				String checkClassEnrollmentQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId + " AND student_id=" + studentId;
+				ResultSet checkClassEnrollmentResult = statement.executeQuery(checkClassEnrollmentQuery);
+				int counter = 0;
+				while(checkClassEnrollmentResult.next())
+				{
+					counter++;
+				}
+				if(counter == 0)
+				{
+					log.warning(Constants.studentNotEnrolledInCurrentClass);
+					return false;
+				}
 				//now first report grade for each assignment
+				//TODO: show assignment even if the student has not got a reuslt fot that assignment
 				String eachAssignmentQuery = "SELECT s.student_id, s.student_name, cat.category_name, a.assignment_name, a.point_value, rgf.grade FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id "
 										   + "JOIN assignment a ON rgf.assignment_id=a.assignment_id JOIN category cat ON a.category_id=cat.category_id WHERE a.course_id=" + this.currentlyActiveClassId
 										   + " AND s.student_id=" + studentId + ";";
 				ResultSet eachAssignmentResult = statement.executeQuery(eachAssignmentQuery);
 				
+				counter = 0;
+				String[][] resultTable = null;
 				while(eachAssignmentResult.next())
 				{
-					System.out.println(eachAssignmentResult.getInt("student_id") + ", " + eachAssignmentResult.getString("student_name") + ", " + eachAssignmentResult.getString("assignment_name") + ", " + eachAssignmentResult.getInt("point_value") + ", " + eachAssignmentResult.getInt("grade"));
+					if(resultTable == null)
+					{
+						resultTable = new String[1][6];
+						resultTable[counter] = new String[6];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, counter+1);
+						resultTable[counter] = new String[6];
+					}
+					
+					resultTable[counter][0] = new String(String.valueOf(eachAssignmentResult.getInt("student_id")));
+					resultTable[counter][1] = new String(eachAssignmentResult.getString("student_name"));
+					resultTable[counter][2] = new String(eachAssignmentResult.getString("category_name"));
+					resultTable[counter][3] = new String(eachAssignmentResult.getString("assignment_name"));
+					resultTable[counter][4] = new String(String.valueOf(eachAssignmentResult.getInt("point_value")));
+					resultTable[counter][5] = new String(String.valueOf(eachAssignmentResult.getInt("grade")));
+					
+					counter++;
+					/*System.out.println(eachAssignmentResult.getInt("student_id") + ", " + eachAssignmentResult.getString("student_name") + ", " + eachAssignmentResult.getString("assignment_name") + ", " + eachAssignmentResult.getInt("point_value") + ", " + eachAssignmentResult.getInt("grade"));*/
 				}
 				
-				
-				String categoryWiseTotalQuery = "SELECT cat.category_name, SUM(rgf.grade) as total FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
+				this.PrintData(Constants.studentGrades, resultTable, Constants.assignmentList);
+				//subtotals by category
+				String categoryWiseTotalQuery = "SELECT cat.category_name, SUM(rgf.grade) AS totalGradeReceived, SUM(a.point_value) AS totalGradePossible FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
 											  + "WHERE a.course_id=" + this.currentlyActiveClassId + " AND rgf.student_id=" + studentId + " GROUP BY cat.category_name;";
 				
 				ResultSet categoryWiseTotalResult = statement.executeQuery(categoryWiseTotalQuery);
+				
+				counter = 0;
+				resultTable = null;
 				while(categoryWiseTotalResult.next())
 				{
-					System.out.println(categoryWiseTotalResult.getString("category_name") + ", " + categoryWiseTotalResult.getInt("total"));
+					if(resultTable == null)
+					{
+						resultTable = new String[1][3];
+						resultTable[counter] = new String[3];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, counter+1);
+						resultTable[counter] = new String[3];
+					}
+					
+					resultTable[counter][0] = new String(String.valueOf(eachAssignmentResult.getInt("category_name")));
+					resultTable[counter][1] = new String(eachAssignmentResult.getString("totalGradeReceived"));
+					resultTable[counter][2] = new String(eachAssignmentResult.getString("totalGradePossible"));
+					
+					counter++;
 				}
+				this.PrintData(Constants.studentGrades, resultTable, Constants.byCategory);
 				
+				//TOTO:: overall grade in class
 				return true;
 			}
 			catch(SQLException e)
@@ -1279,7 +1335,7 @@ public class DatabaseConnection
 			
 	}
 	
-	private void PrintData(String commandType, String[][] resultTable)
+	private void PrintData(String commandType, String[][] resultTable, String subCommand)
 	{
 		if(commandType.equals(Constants.listClasses))
 		{
@@ -1319,6 +1375,29 @@ public class DatabaseConnection
 			for(Object[] row : resultTable)
 			{
 				System.out.format("%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.studentGrades))
+		{
+			if(subCommand.equals(Constants.assignmentList))
+			{
+				/*"student_id, student_name, category_name, assignment_name, point_value, grade*/
+				final Object[] header = new String[] {"student_id", "student_name", "category_name", "assignment_name", "point_value", "grade"};
+				System.out.format("%15s%15s%15s%15s%15s%15s\n", header);
+				for(Object[] row : resultTable)
+				{
+					System.out.format("%15s%15s%15s%15s%15s%15s\n", row);
+				}
+			}
+			else if(subCommand.equals(Constants.byCategory))
+			{
+				/*category_name, totalGradeReceived, totalGradePossible*/
+				final Object[] header = new String[] {"category_name", "totalGradeReceived", "totalGradePossible"};
+				System.out.format("%15s%15s%15s\n", header);
+				for(Object[] row : resultTable)
+				{
+					System.out.format("%15s%15s%15s\n", row);
+				}
 			}
 		}
 	}
