@@ -599,28 +599,48 @@ public class DatabaseConnection
 										   + "WHERE asn.course_id=" + this.currentlyActiveClassId + ";";
 				ResultSet result = statement.executeQuery(showAssignmentQuery);
 				
-				log.info("Showing assignments for the current class...");
+				log.info(Constants.showingAssignmentForCurrentClass);
 				
+				
+				String[][] resultTable = null;
 				int counter = 0;
 				while(result.next())
 				{
+					if(resultTable == null)
+					{
+						resultTable = new String[1][3];
+						resultTable[counter] = new String[3];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, counter+1);
+						resultTable[counter] = new String[3];
+					}
+					
+					resultTable[counter][0] = new String(String.valueOf(result.getInt("category_id")));
+					resultTable[counter][1] = new String(result.getString("category_name"));
+					resultTable[counter][2] = new String(String.valueOf(result.getInt("weight")));
+					
 					counter++;
-					System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", "
+					/*System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", "
 									  + result.getInt("assignment_id") + ", " + result.getString("assignment_name") + ", "
-									  + result.getInt("point_value"));
+									  + result.getInt("point_value"));*/
 				}
 				
 				if(counter == 0)
 				{
-					log.warning("No data found..");
+					log.warning(Constants.noDataFound);
 					return false;
 				}
 				else
 				{
+					this.PrintData(Constants.showAssignment, resultTable);
 					return true;
 				}
-			} catch (SQLException e) {
-				log.warning("SQLException occured during showing category...");
+			}
+			catch (SQLException e)
+			{
+				log.warning(Constants.sqlExceptionOccured + Constants.showingCategory);
 				e.printStackTrace();
 				return false;
 			}
@@ -638,21 +658,37 @@ public class DatabaseConnection
 			
 			try
 			{
-				//TODO:: should we check for already existance? now we are doing that
 				String assignmentExistanceCheckQuery = "SELECT * FROM assignment WHERE course_id=" + this.currentlyActiveClassId
 													 + " AND assignment_name='" + command.GetAssignmentName() + "';";
 				
-				System.out.println("assignmentExistanceCheckQuery = " + assignmentExistanceCheckQuery);
 				ResultSet assignmentExistanceCheckResult = statement.executeQuery(assignmentExistanceCheckQuery);
 				
 				if(assignmentExistanceCheckResult.next())
 				{
-					int assignmentId = assignmentExistanceCheckResult.getInt("assignment_id");
-					int categoryId = assignmentExistanceCheckResult.getInt("category_id");
+					int oldAssignmentId = assignmentExistanceCheckResult.getInt("assignment_id");
+					int oldCategoryId = assignmentExistanceCheckResult.getInt("category_id");
 					log.warning("Assignment with same name already exists in this course! replacing it");
-					String updateAssignmentQuery = "UPDATE assignment SET point_value=" + command.GetAssignmentPointValue() + ", assignment_description='" + command.GetAssignmentDescription() + "' WHERE assignment_id=" + assignmentId + " AND course_id=" + this.currentlyActiveClassId + " AND category_id=" + categoryId + ";";
-					System.out.println("updateAssignmentQuery: " + updateAssignmentQuery);
+					
+					//check category
+					String getCategoryQuery = "SELECT * FROM contains con JOIN category cat ON con.category_id=cat.category_id "
+											+ "WHERE cat.category_name='" + command.GetAssignmentCategory() + "' AND con.course_id=" + this.currentlyActiveClassId + ";";
+					
+					ResultSet getCategoryResult = statement.executeQuery(getCategoryQuery);
+					
+					String newCategoryId = null;
+					if(getCategoryResult.next())
+					{
+						newCategoryId = String.valueOf(getCategoryResult.getInt("cat.category_id"));
+					}
+					else
+					{
+						log.warning("current class does not have the given category..");
+						return false;
+					}
+					//
+					String updateAssignmentQuery = "UPDATE assignment SET point_value=" + command.GetAssignmentPointValue() + ", assignment_description='" + command.GetAssignmentDescription() + "', category_id=" + newCategoryId + " WHERE assignment_id=" + oldAssignmentId + " AND assignment_name='" + command.GetAssignmentName() + "' AND course_id=" + this.currentlyActiveClassId + " AND category_id=" + oldCategoryId + ";";
 					statement.executeUpdate(updateAssignmentQuery);
+					log.info(Constants.assignmentAdded);
 					return true;
 				}
 				
@@ -680,13 +716,13 @@ public class DatabaseConnection
 				String addAssignmentQuery = "insert into assignment (assignment_name, assignment_description, point_value, course_id, category_id) values ('"
 										  + command.GetAssignmentName() + "', '" + command.GetAssignmentDescription() + "', " + command.GetAssignmentPointValue()
 										  + ", " + this.currentlyActiveClassId + ", " + currentCategoryId + ");";
-				System.out.println("addAssignmentQuery: " + addAssignmentQuery);
 				statement.executeUpdate(addAssignmentQuery);
+				log.info(Constants.assignmentAdded);
 				return true;
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during adding assignment...");
+				log.warning(Constants.sqlExceptionOccured + Constants.addingAssignment);
 				e.printStackTrace();
 				return false;
 			}
@@ -706,13 +742,12 @@ public class DatabaseConnection
 			{
 				//check if the student already exists
 				String studentExistsCheckQuery = "SELECT * FROM student WHERE user_name='" + command.GetStudentUserName() + "';";
-				System.out.println("studentExistsCheckQuery: " + studentExistsCheckQuery);
 				ResultSet studentExistsCheckResult = statement.executeQuery(studentExistsCheckQuery);
 				
 				if(studentExistsCheckResult.next())	//user already exists
 				{
-					System.out.println("student already exists");
-					System.out.println("just enrolling requuired");
+					System.out.println(Constants.studentAlreadyExists);
+					
 					int studentId = studentExistsCheckResult.getInt("student_id");
 					if(command.GetStudentId() == null)	//add-student username
 					{
@@ -724,7 +759,7 @@ public class DatabaseConnection
 						ResultSet checkEnrollmentStatusResult = statement.executeQuery(checkEnrollmentStatusQuery);
 						if(checkEnrollmentStatusResult.next())	//student is already enrolled
 						{
-							log.info("Student already enrolled in class..");
+							log.info(Constants.studentAlreadyEnrolled);
 							return true;
 						}
 						else	//enrol the student
@@ -748,10 +783,10 @@ public class DatabaseConnection
 							ResultSet checkEnrollmentStatusResult = statement.executeQuery(checkEnrollmentStatusQuery);
 							if(checkEnrollmentStatusResult.next())	//student is already enrolled
 							{
-								log.info("Student already enrolled in class..");
+								log.info(Constants.studentAlreadyEnrolled);
 								return true;
 							}
-							else	//enrol the student
+							else	//otherwise enroll the student
 							{
 								String enrollStudentQuery = "insert into enrolled_in (course_id, student_id) values (" + this.currentlyActiveClassId + ", " + studentId + ");";
 								statement.executeUpdate(enrollStudentQuery);
@@ -761,6 +796,8 @@ public class DatabaseConnection
 						}
 						else	//we need to update the info then do the rest
 						{
+							log.warning(Constants.nameDontMatch);
+							log.info(Constants.updatingStudentInfo);
 							//update the data first
 							String updateQuery = "UPDATE student SET student_name='" + command.GetStudentFullName() + "' WHERE student_id=" + String.valueOf(studentExistsCheckResult.getInt("student_id")) + ";";
 							statement.executeUpdate(updateQuery);
@@ -774,7 +811,7 @@ public class DatabaseConnection
 							ResultSet checkEnrollmentStatusResult = statement.executeQuery(checkEnrollmentStatusQuery);
 							if(checkEnrollmentStatusResult.next())	//student is already enrolled
 							{
-								log.info("Student already enrolled in class..");
+								log.info(Constants.studentAlreadyEnrolled);
 								return true;
 							}
 							else	//enrol the student
@@ -792,7 +829,7 @@ public class DatabaseConnection
 				{
 					if(command.GetStudentId() == null)	//add-student username
 					{
-						log.warning("Student does not exist...");
+						log.warning(Constants.studentDoesNotExist);
 						return false;
 					}
 					else	//add-student username studentid Last First
@@ -818,7 +855,6 @@ public class DatabaseConnection
 		}
 		else if(command.GetCommandType().equals(Constants.showStudents))
 		{
-			//TODO:: show-students string
 			//if we dont have a current class, the query is invalid
 			if(this.currentlyActiveClassId == null)
 			{
@@ -831,51 +867,82 @@ public class DatabaseConnection
 			{
 				if(command.GetUsernameSubstring() == null)	//show-students
 				{
-					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st "
+					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st ON st.student_id=en.student "
 											 + "WHERE en.course_id=" + this.currentlyActiveClassId + ";";
 					ResultSet showStudentsResult = statement.executeQuery(showStudentsQuery);
 					
-					log.info("Students in current class:");
+					log.info(Constants.studentsInCurrentClass);
 					int counter = 0;
-					
+					String[][] resultTable = null;
 					while(showStudentsResult.next())
 					{
+						if(resultTable == null)
+						{
+							resultTable = new String[1][3];
+							resultTable[counter] = new String[3];
+						}
+						else
+						{
+							resultTable = Arrays.copyOf(resultTable, counter+1);
+							resultTable[counter] = new String[3];
+						}
+						
+						resultTable[counter][0] = new String(String.valueOf(showStudentsResult.getInt("student_id")));
+						resultTable[counter][1] = new String(showStudentsResult.getString("user_name"));
+						resultTable[counter][2] = new String(showStudentsResult.getString("student_name"));
+						
 						counter++;
 						
-						System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getString("student_name"));
+						/*System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getString("student_name"));*/
 					}
 					if(counter == 0)
 					{
-						log.warning("No students found..");
+						log.warning(Constants.noStudentsFound);
 						return false;
 					}
 					else
 					{
+						this.PrintData(Constants.showStudents, resultTable);
 						return true;
 					}
 				}
 				else	//show-students string
 				{
-					//TODO:: this is not complete
 					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st "
 											 + "WHERE en.course_id=" + this.currentlyActiveClassId + " AND (st.user_name LIKE '%" + command.GetUsernameSubstring() + "%' OR st.student_name LIKE '%" + command.GetUsernameSubstring() + "%');";
 					ResultSet showStudentsResult = statement.executeQuery(showStudentsQuery);
 					
 					int counter = 0;
-					
+					String[][] resultTable = null;
 					while(showStudentsResult.next())
 					{
+						if(resultTable == null)
+						{
+							resultTable = new String[1][3];
+							resultTable[counter] = new String[3];
+						}
+						else
+						{
+							resultTable = Arrays.copyOf(resultTable, counter+1);
+							resultTable[counter] = new String[3];
+						}
+						
+						resultTable[counter][0] = new String(String.valueOf(showStudentsResult.getInt("student_id")));
+						resultTable[counter][1] = new String(showStudentsResult.getString("user_name"));
+						resultTable[counter][2] = new String(showStudentsResult.getString("student_name"));
+
 						counter++;
 						
-						System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getShort("student_name"));
+						/*System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getShort("student_name"));*/
 					}
 					if(counter == 0)
 					{
-						log.warning("No students found..");
+						log.warning(Constants.noStudentsFound);
 						return false;
 					}
 					else
 					{
+						this.PrintData(Constants.showStudents, resultTable);
 						return true;
 					}
 				}
@@ -913,7 +980,7 @@ public class DatabaseConnection
 				}
 				if(usernameCheckCounter == 0)
 				{
-					log.warning("username does not exist..");
+					log.warning(Constants.usernameDoesNotExist);
 					return false;
 				}
 				
@@ -936,24 +1003,37 @@ public class DatabaseConnection
 				
 				if(counter == 0)
 				{
-					log.warning("assignmentname does not exist..");
+					log.warning(Constants.assignmentNameDoesNotExist);
 					return false;
 				}
 				if(Integer.parseInt(command.GetStudentReceivedGradeForCourse()) > pointValue)
 				{
-					log.warning("Point exceeds the maximum possible point!!");
-					return false;
+					log.warning(Constants.pointExceedMaxPossiblePoint);
 				}
 				
+				//checking if the student is enrolled to the current class
+				String checkClassEnrollmentQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId + " AND student_id=" + studentId;
+				ResultSet checkClassEnrollmentResult = statement.executeQuery(checkClassEnrollmentQuery);
+				counter = 0;
+				while(checkClassEnrollmentResult.next())
+				{
+					counter++;
+				}
+				if(counter == 0)
+				{
+					log.warning(Constants.studentNotEnrolledInCurrentClass);
+					return false;
+				}
 				//everything is okay, now we check if the student already has a grade for this assignment
 				String checkAssignmentAlreadyGradedQuery = "SELECT * FROM receives_grade_for WHERE assignment_id=" + assignmentId
 														 + " AND student_id=" + studentId + ";";
 				ResultSet checkAssignmentAlreadyGradedResult = statement.executeQuery(checkAssignmentAlreadyGradedQuery);
 				if(checkAssignmentAlreadyGradedResult.next())	//this mean grade already exist, we need to update
 				{
-					String resultQuery = "UPDATE receives_grade_for SET grade=" + command.GetStudentReceivedGradeForCourse() + "' WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
+					log.warning(Constants.replacingPreviouslyReceivedGrade + Constants.from + String.valueOf(checkAssignmentAlreadyGradedResult.getInt("grade")) + Constants.to +  command.GetStudentReceivedGradeForCourse());
+					String resultQuery = "UPDATE receives_grade_for SET grade=" + command.GetStudentReceivedGradeForCourse() + " WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
 					statement.executeUpdate(resultQuery);
-					log.info("student grade updated!!");
+					log.info(Constants.studentGradeUpdated);
 					return true;
 				}
 				else	//otherwise we just add the grade
@@ -961,19 +1041,17 @@ public class DatabaseConnection
 					String resultQuery = "insert into receives_grade_for (student_id, assignment_id, grade) values (" + studentId
 									   + ", " + assignmentId + ", " + command.GetStudentReceivedGradeForCourse() + ");";
 					statement.executeUpdate(resultQuery);
-					log.info("student grade added!!");
+					log.info(Constants.studentGradeAdded);
 					return true;
 				}
 				
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during adding student grade...");
+				log.warning(Constants.sqlExceptionOccured + Constants.addingStudentGrade);
 				e.printStackTrace();
 				return false;
 			}
-			
-			
 		}
 		else if(command.GetCommandType().equals(Constants.studentGrades))
 		{
@@ -1221,6 +1299,26 @@ public class DatabaseConnection
 			for(Object[] row : resultTable)
 			{
 				System.out.format("%15s%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.showCategories))
+		{
+			/*course_id, course_number, term, section_no, */
+			final Object[] header = new String[] {"course_id", "course_number", "term", "section_no"};
+			System.out.format("%15s%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.showStudents))
+		{
+			/*student_id, user_name, student_name*/
+			final Object[] header = new String[] {"student_id", "user_name", "student_name"};
+			System.out.format("%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s\n", row);
 			}
 		}
 	}

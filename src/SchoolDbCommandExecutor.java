@@ -439,12 +439,12 @@ public class SchoolDbCommandExecutor
 			}
 			
 			command.SetCommandType(Constants.addStudent);
-			command.SetStudentUserName(splittedCommand[1]);
+			command.SetStudentUserName(splittedCommand[1].toLowerCase());
 			
 			if(splittedCommand.length == 5)
 			{
 				command.SetStudentId(splittedCommand[2]);
-				command.SetStudentFullName(splittedCommand[4] + Constants.space + splittedCommand[3]);
+				command.SetStudentFullName(splittedCommand[4].toLowerCase() + Constants.space + splittedCommand[3].toLowerCase());
 			}
 			
 			return command;

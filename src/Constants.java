@@ -96,7 +96,6 @@ public class Constants
 	public static String values = "values ";
 	public static String select = "SELECT ";
 	public static String distinct = "DISTINCT ";
-	public static String from = "FROM ";
 	public static String count = "COUNT";
 	public static String as = "AS ";
 	public static String join = "JOIN ";
@@ -132,6 +131,13 @@ public class Constants
 	public static String addingTheCategoryFirst = "adding the category first";
 	public static String givenCategoryAdded = "Given category and weight added for given class";
 	public static String givenCategoryWeightUpdated = "Weight updated for given category for current active class";
+	public static String showingAssignmentForCurrentClass = "Showing assignments for the current class...";
+	public static String assignmentAdded = "Assignment added";
+	public static String studentAlreadyEnrolled = "Student already enrolled in class..";
+	public static String updatingStudentInfo = "Updating student info";
+	public static String studentsInCurrentClass = "Students in current class:";
+	public static String studentGradeUpdated = "Student grade updated!";
+	public static String studentGradeAdded = "student grade added!";
 	
 	//log.warning
 	public static String classAlreadyExists = "Information about same class already exist!";
@@ -144,8 +150,23 @@ public class Constants
 	public static String retrieveClassList = "retriving class list...";
 	public static String activateClass = "activating class...";
 	public static String getLatestTerm = "getting latest term";
+	public static String showingCategory = "showing category..";
+	public static String addingAssignment = "adding assignment..";
 	public static String mostRecentTermUndefined = "Most recent term undefined, cannot select class";
 	public static String categoryAlreadyExists = "This catehory already exists for this class, replacing weight";
 	public static String weightExceedLimit = "Total weight exceeding 100 for this class, cannot insert weight";
+	public static String studentAlreadyExists = "student already exists";
+	public static String nameDontMatch = "Name does not match!";
+	public static String studentDoesNotExist = "Student does not exist...";
+	public static String noStudentsFound = "No students found..";
+	public static String usernameDoesNotExist = "username does not exist..";
+	public static String assignmentNameDoesNotExist = "assignmentname does not exist..";
+	public static String pointExceedMaxPossiblePoint = "Point exceeds the maximum possible point!!";
+	public static String studentNotEnrolledInCurrentClass = "Student is not enrolled in the current class";
+	public static String replacingPreviouslyReceivedGrade = "Replacing previously received grade ";
+	public static String addingStudentGrade = "adding student grade...";
+	//
+	public static String from = "from ";
+	public static String to = " to ";
 
 }
