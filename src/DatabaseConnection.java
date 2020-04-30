@@ -441,19 +441,34 @@ public class DatabaseConnection
 			{
 				query = "SELECT con.category_id, cat.category_name, con.weight FROM class cl JOIN contains con ON cl.course_id = con.course_id "
 					  + "JOIN category cat ON con.category_id = cat.category_id WHERE cl.course_id = " + this.currentlyActiveClassId;
-					
-				System.out.println("Query string: " + query);
 				
 				ResultSet result = statement.executeQuery(query);
 				
-				log.info("Showing categories for the class: " + this.currentlyActiveClassCourseNumber);
+				log.info(Constants.showingCategoryForClass + this.currentlyActiveClassCourseNumber);
 				int counter = 0;
+				String[][] resultTable = null;
 				while(result.next())
 				{
+					if(resultTable == null)
+					{
+						resultTable = new String[1][3];
+						resultTable[counter] = new String[3];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, counter+1);
+						resultTable[counter] = new String[3];
+					}
+					
+					resultTable[counter][0] = new String(String.valueOf(result.getInt("category_id")));
+					resultTable[counter][1] = new String(result.getString("category_name"));
+					resultTable[counter][2] = new String(String.valueOf(result.getInt("weight")));
+					
 					counter++;
-					System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", " + result.getInt("weight"));
+					//System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", " + result.getInt("weight"));
 				}
 				
+				this.PrintData(Constants.showCategories, resultTable);
 				if(counter == 0)
 				{
 					log.warning("No data found..");
@@ -487,28 +502,27 @@ public class DatabaseConnection
 			//first checking whether this category exists
 			try
 			{
-				System.out.println("first checking if the category exists...");
 				String categoryCheckQuery = "SELECT * FROM category WHERE category_name='" + command.GetCategoryName() + "';";
 				ResultSet categoryCheckResult = statement.executeQuery(categoryCheckQuery);
 				
 				String currentCategoryId = null;
+				int currentCategoryWeight = -1;
 				if(categoryCheckResult.next())	//category exists in category table, get the id
 				{
-					System.out.println("category exist!");
+					System.out.println(Constants.categoryExists);
 					currentCategoryId = String.valueOf(categoryCheckResult.getInt("category_id"));
 				}
 				else	//category doesn't exist in the category table, so add there first
 				{
-					System.out.println("category does not exist!");
-					System.out.println("adding the category first");
+					System.out.println(Constants.categoryDoesNotExist);
+					System.out.println(Constants.addingTheCategoryFirst);
 					String addCategoryQuery = "insert into category (category_name) values ('" + command.GetCategoryName() + "');";
-					System.out.println("query = " + addCategoryQuery);
 					statement.executeUpdate(addCategoryQuery);
 					
+					//now get the recently inserted id
 					categoryCheckResult = statement.executeQuery(categoryCheckQuery);
 					boolean categoryCheckBoolResult = categoryCheckResult.next();
 					currentCategoryId = String.valueOf(categoryCheckResult.getInt("category_id"));
-					System.out.println("id: " + currentCategoryId);
 				}
 				
 				//now the category exists no matter what, we can just add the weight in contains
@@ -520,19 +534,46 @@ public class DatabaseConnection
 				
 				if(categoryClassContainCheckResult.next())	//this category is already added for this class
 				{
-					//TODO:: should we replace?
-					log.warning("This catehory already exists for this class");
-					return false;
+					//getting the previous weight
+					currentCategoryWeight = categoryClassContainCheckResult.getInt("weight");
+					//if categroy already exists for this class, we replace the weight
+					log.warning(Constants.categoryAlreadyExists);
+					//first we need to check if total weight will sum to equal to or less than 100
+					String weightSumQuery = "SELECT SUM(weight) AS total_weight FROM contains WHERE course_id=" + this.currentlyActiveClassId + ";";
+					ResultSet weightSumResult = statement.executeQuery(weightSumQuery);
+					boolean weightSumBoolResult = weightSumResult.next();
+					int sum = weightSumResult.getInt("total_weight") - currentCategoryWeight + Integer.parseInt(command.GetCategoryWeightForCourse());
+					
+					//check sum
+					if(sum > 100)
+					{
+						log.warning(Constants.weightExceedLimit);
+						return false;
+					}
+					//otherwise everything is okay, we need to update the weight
+					String updateCategoryWeightQuery = "UPDATE contains SET weight=" + command.GetCategoryWeightForCourse() + " WHERE category_id=" + currentCategoryId + " AND course_id=" + this.currentlyActiveClassId + ";";
+					statement.executeUpdate(updateCategoryWeightQuery);
+					log.info(Constants.givenCategoryWeightUpdated);
+					return true;
 				}
 				
-				System.out.print("inserting into contains");
-				
+				//we need to check weight constraints
+				String weightSumQuery = "SELECT SUM(weight) AS total_weight FROM contains WHERE course_id=" + this.currentlyActiveClassId + ";";
+				ResultSet weightSumResult = statement.executeQuery(weightSumQuery);
+				boolean weightSumBoolResult = weightSumResult.next();
+				int sum = weightSumResult.getInt("total_weight") + Integer.parseInt(command.GetCategoryWeightForCourse());
+				//check sum
+				if(sum > 100)
+				{
+					log.warning(Constants.weightExceedLimit);
+					return false;
+				}
 				//otherwise now we can add this category to contains
 				String insertCategoryWeightQuery = "insert into contains (course_id, category_id, weight) values (" + this.currentlyActiveClassId
 											+ ", " + currentCategoryId + ", " + command.GetCategoryWeightForCourse() + ");";
 				
 				statement.executeUpdate(insertCategoryWeightQuery);
-				log.info("Given category added for given class");
+				log.info(Constants.givenCategoryAdded);
 				return true;
 			}
 			catch (SQLException e)

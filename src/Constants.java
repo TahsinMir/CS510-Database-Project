@@ -126,6 +126,12 @@ public class Constants
 	public static String newClassInserted = "New class info inserted!";
 	public static String activatingClass = "activating class: ";
 	public static String activatedClassDescription = "Activated class description: ";
+	public static String showingCategoryForClass = "Showing categories for the class: ";
+	public static String categoryExists = "category exists!";
+	public static String categoryDoesNotExist = "category does not exist!";
+	public static String addingTheCategoryFirst = "adding the category first";
+	public static String givenCategoryAdded = "Given category and weight added for given class";
+	public static String givenCategoryWeightUpdated = "Weight updated for given category for current active class";
 	
 	//log.warning
 	public static String classAlreadyExists = "Information about same class already exist!";
@@ -139,5 +145,7 @@ public class Constants
 	public static String activateClass = "activating class...";
 	public static String getLatestTerm = "getting latest term";
 	public static String mostRecentTermUndefined = "Most recent term undefined, cannot select class";
+	public static String categoryAlreadyExists = "This catehory already exists for this class, replacing weight";
+	public static String weightExceedLimit = "Total weight exceeding 100 for this class, cannot insert weight";
 
 }
