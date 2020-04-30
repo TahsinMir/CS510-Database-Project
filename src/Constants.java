@@ -109,8 +109,23 @@ public class Constants
 	public static String containsCON = "con";
 	public static String categoryCAT = "cat";
 	
+	//semesters
+	public static String fall = "fall";
+	public static String Fall = "Fall";
+	public static String spring = "spring";
+	public static String Spring = "Spring";
+	public static String springShort = "sp";
+	public static String SpringShort = "Sp";
+	public static String summer = "summer";
+	public static String Summer = "Summer";
+	public static String summerShort = "sum";
+	public static String SummerShort = "Sum";
+	
 	//log.info
 	public static String availableClasses = "Available classes with given information:";
+	public static String newClassInserted = "New class info inserted!";
+	public static String activatingClass = "activating class: ";
+	public static String activatedClassDescription = "Activated class description: ";
 	
 	//log.warning
 	public static String classAlreadyExists = "Information about same class already exist!";
@@ -122,5 +137,7 @@ public class Constants
 	public static String newClassInsertion = "new class insertion...";
 	public static String retrieveClassList = "retriving class list...";
 	public static String activateClass = "activating class...";
+	public static String getLatestTerm = "getting latest term";
+	public static String mostRecentTermUndefined = "Most recent term undefined, cannot select class";
 
 }

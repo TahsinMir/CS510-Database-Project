@@ -237,6 +237,47 @@ public class SchoolDbCommandExecutor
 		
 	}
 	
+	private String isTermStructureSatisfied(String potentialTerm)
+	{
+		String year = potentialTerm.substring(potentialTerm.length()-2);
+		String semester = potentialTerm.substring(0, potentialTerm.length()-2);
+		
+		System.out.println("semester: " + semester + ", year: " + year);
+		
+		if(!(semester.equals(Constants.fall) || semester.equals(Constants.Fall) || semester.equals(Constants.spring) || semester.equals(Constants.Spring) || semester.equals(Constants.springShort)
+		   || semester.equals(Constants.SpringShort) || semester.equals(Constants.summer) || semester.equals(Constants.Summer) || semester.equals(Constants.summerShort) || semester.equals(Constants.SummerShort)))
+		{
+			log.warning("Invalid semester in \"term\"!!! \nValid semesters are: " + Constants.fall + ", " + Constants.Fall + ", " + Constants.spring + ", " + Constants.Spring + ", " + Constants.springShort
+		               + ", " + Constants.SpringShort + ", " + Constants.summer + ", " + Constants.Summer + ", " + Constants.summerShort + ", " + Constants.SummerShort);
+			return null;
+		}
+		
+		try
+		{
+			int yearInt = Integer.parseInt(year);
+		}
+		catch(Exception e)
+		{
+			log.warning("Invalid year in \"term\"");
+			return null;
+		}
+		
+		String result = null;
+		if(semester.equals(Constants.Spring) || semester.equals(Constants.spring) || semester.equals(Constants.springShort) || semester.equals(Constants.SpringShort))
+		{
+			result = Constants.Spring + year;
+		}
+		else if(semester.equals(Constants.Summer) || semester.equals(Constants.summer) || semester.equals(Constants.summerShort) || semester.equals(Constants.SummerShort))
+		{
+			result = Constants.Summer + year;
+		}
+		else if(semester.equals(Constants.Fall) || semester.equals(Constants.fall))
+		{
+			result = Constants.Fall + year;
+		}
+		return result;
+	}
+	
 	private Command PrepareCommand(String commandStr)
 	{
 		String[] splittedCommand = SplitCommandLine(commandStr);
@@ -258,9 +299,15 @@ public class SchoolDbCommandExecutor
 				return null;
 			}
 			
+			String modifiedTerm = isTermStructureSatisfied(splittedCommand[2]);
+			if(modifiedTerm == null)
+			{
+				return null;
+			}
+			
 			command.SetCommandType(Constants.newClass);
 			command.SetCourseNumber(splittedCommand[1]);
-			command.SetCourseTerm(splittedCommand[2]);
+			command.SetCourseTerm(modifiedTerm);
 			command.SetCourseSectionNo(splittedCommand[3]);
 			command.SetCourseDescription(splittedCommand[4]);
 			

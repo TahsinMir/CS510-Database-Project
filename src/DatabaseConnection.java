@@ -8,6 +8,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -52,6 +53,18 @@ public class DatabaseConnection
 			log.info("Database connection established!");
 			this.statement = connection.createStatement();
 			log.info("Statement read for query execution");
+			
+			//most recent term
+			this.mostRecentTerm = this.RetrieveMostRecentTerm();
+			if(this.mostRecentTerm == null)
+			{
+				System.out.println("Most recent term: " + "null");
+			}
+			else
+			{
+				System.out.println("Most recent term: " + this.mostRecentTerm);
+			}
+			
 			return true;
 		}
 		catch (SQLException e)
@@ -126,7 +139,10 @@ public class DatabaseConnection
 				query = "insert into class (course_number, term, section_no, class_description) values ('" + command.GetCourseNumber()
 					  + "', '" + command.GetCourseTerm() + "', " + command.GetCourseSectionNo() + ", '" + command.GetCourseDescription() + "');";
 				statement.executeUpdate(query);
-				log.info("New class info inserted!");
+				log.info(Constants.newClassInserted);
+				
+				//modify the most recent term
+				this.mostRecentTerm = this.RetrieveMostRecentTerm();
 				return true;
 			}
 			catch (SQLException e)
@@ -145,18 +161,40 @@ public class DatabaseConnection
 				ResultSet result = statement.executeQuery(query);
 				
 				boolean isResultFound = false;
+				String[][] resultTable = null;
+				int tableCounter = 0;
 				while(result.next())
 				{
 					isResultFound = true;
 					
-					System.out.println(result.getString("course_number") + ", " + result.getString("term")
-									   + ", " + result.getInt("section_no") + ", " + result.getInt("student_count"));
+					if(resultTable == null)
+					{
+						resultTable = new String[1][4];
+						resultTable[tableCounter] = new String[4];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, tableCounter+1);
+						resultTable[tableCounter] = new String[4];
+					}
+					
+					resultTable[tableCounter][0] = new String(result.getString("course_number"));
+					resultTable[tableCounter][1] = new String(result.getString("term"));
+					resultTable[tableCounter][2] = new String(String.valueOf(result.getInt("section_no")));
+					resultTable[tableCounter][3] = new String(String.valueOf(result.getInt("student_count")));
+					
+					tableCounter++;
+					
 				}
 				
 				if(!isResultFound)
 				{
 					log.warning(Constants.noDataFound);
 					return false;
+				}
+				else
+				{
+					this.PrintData(Constants.listClasses, resultTable);//, tableCounter, 4);
 				}
 				return true;
 			}
@@ -170,10 +208,86 @@ public class DatabaseConnection
 		else if(command.GetCommandType().equals(Constants.selectClass))
 		{
 			if(command.GetCourseTerm() == null && command.GetCourseSectionNo() == null)	//only course_number given
-			{
-				// TODO:: how do we get the recent term
-				log.warning("Not yet implemented!");
-				return false;
+			{				
+				try
+				{
+					if(this.mostRecentTerm == null)
+					{
+						log.warning(Constants.mostRecentTermUndefined);
+						return false;
+					}
+					
+					query = "SELECT * FROM class WHERE course_number='" + command.GetCourseNumber() + "' AND term='"
+						  + this.mostRecentTerm + "';";
+					ResultSet result = statement.executeQuery(query);
+					
+					String tempCurrentlyActiveClassId = null;
+					String tempCurrentlyActiveClassCourseNumber = null;
+					String tempCurrentlyActiveClassTerm = null;
+					String tempCurrentlyActiveClassSectionNo = null;
+					String tempCurrentlyActiveClassDescription = null;
+					
+					int counter = 0;
+					String[][] resultTable = null;
+					while(result.next())
+					{
+						if(resultTable == null)
+						{
+							resultTable = new String[1][4];
+							resultTable[counter] = new String[4];
+						}
+						else
+						{
+							resultTable = Arrays.copyOf(resultTable, counter+1);
+							resultTable[counter] = new String[4];
+						}
+						
+						resultTable[counter][0] = new String(String.valueOf(result.getInt("course_id")));
+						resultTable[counter][1] = new String(result.getString("course_number"));
+						resultTable[counter][2] = new String(result.getString("term"));
+						resultTable[counter][3] = new String(String.valueOf(result.getInt("section_no")));
+						
+						/*System.out.println(result.getInt("course_id") + ", " + result.getString("course_number")
+										 + ", " + result.getString("term") + ", " + result.getString("section_no"));*/
+						
+						if(counter == 0)
+						{
+							tempCurrentlyActiveClassId = String.valueOf(result.getInt("course_id"));
+							tempCurrentlyActiveClassCourseNumber = result.getString("course_number");
+							tempCurrentlyActiveClassTerm = result.getString("term");
+							tempCurrentlyActiveClassSectionNo = String.valueOf(result.getInt("section_no"));
+							tempCurrentlyActiveClassDescription = result.getString("class_description");
+						}
+						counter++;
+					}
+					
+					log.info(Constants.availableClasses);
+					this.PrintData(Constants.selectClass, resultTable);
+					
+					if(counter == 0)
+					{
+						log.warning(Constants.noClassFound);
+						return false;
+					}
+					if(counter > 1)
+					{						
+						log.warning(Constants.tooManyClassCannotActivateClass);
+						return false;
+					}
+					
+					log.info(Constants.activatingClass + tempCurrentlyActiveClassCourseNumber + ", " + tempCurrentlyActiveClassTerm + ", " + tempCurrentlyActiveClassSectionNo);
+					this.currentlyActiveClassId = tempCurrentlyActiveClassId;
+					this.currentlyActiveClassCourseNumber = tempCurrentlyActiveClassCourseNumber;
+					this.currentlyActiveClassTerm = tempCurrentlyActiveClassTerm;
+					this.currentlyActiveClassSectionNo = tempCurrentlyActiveClassSectionNo;
+					this.currentlyActiveClassDescription = tempCurrentlyActiveClassDescription;
+					
+					return true;
+				}
+				catch(SQLException e)
+				{
+					
+				}
 			}
 			else if(command.GetCourseSectionNo() == null)	//course_number, term given
 			{				
@@ -190,15 +304,29 @@ public class DatabaseConnection
 					String tempCurrentlyActiveClassSectionNo = null;
 					String tempCurrentlyActiveClassDescription = null;
 					
-					log.info(Constants.availableClasses);
 					int counter = 0;
+					String[][] resultTable = null;
 					while(result.next())
 					{
-						counter++;
-						System.out.println(result.getInt("course_id") + ", " + result.getString("course_number")
-										 + ", " + result.getString("term") + ", " + result.getString("section_no"));
+						if(resultTable == null)
+						{
+							resultTable = new String[1][4];
+							resultTable[counter] = new String[4];
+						}
+						else
+						{
+							resultTable = Arrays.copyOf(resultTable, counter+1);
+							resultTable[counter] = new String[4];
+						}
 						
-						if(counter == 1)
+						resultTable[counter][0] = new String(String.valueOf(result.getInt("course_id")));
+						resultTable[counter][1] = new String(result.getString("course_number"));
+						resultTable[counter][2] = new String(result.getString("term"));
+						resultTable[counter][3] = new String(String.valueOf(result.getInt("section_no")));
+						/*System.out.println(result.getInt("course_id") + ", " + result.getString("course_number")
+										 + ", " + result.getString("term") + ", " + result.getString("section_no"));*/
+						
+						if(counter == 0)
 						{
 							tempCurrentlyActiveClassId = String.valueOf(result.getInt("course_id"));
 							tempCurrentlyActiveClassCourseNumber = result.getString("course_number");
@@ -206,7 +334,11 @@ public class DatabaseConnection
 							tempCurrentlyActiveClassSectionNo = String.valueOf(result.getInt("section_no"));
 							tempCurrentlyActiveClassDescription = result.getString("class_description");
 						}
+						counter++;
 					}
+					
+					log.info(Constants.availableClasses);
+					this.PrintData(Constants.selectClass, resultTable);
 					
 					if(counter == 0)
 					{
@@ -219,7 +351,7 @@ public class DatabaseConnection
 						return false;
 					}
 					
-					log.info("activating class: " + tempCurrentlyActiveClassCourseNumber + ", " + tempCurrentlyActiveClassTerm + ", " + tempCurrentlyActiveClassSectionNo);
+					log.info(Constants.activatingClass + tempCurrentlyActiveClassCourseNumber + ", " + tempCurrentlyActiveClassTerm + ", " + tempCurrentlyActiveClassSectionNo);
 					this.currentlyActiveClassId = tempCurrentlyActiveClassId;
 					this.currentlyActiveClassCourseNumber = tempCurrentlyActiveClassCourseNumber;
 					this.currentlyActiveClassTerm = tempCurrentlyActiveClassTerm;
@@ -252,7 +384,7 @@ public class DatabaseConnection
 						this.currentlyActiveClassSectionNo = String.valueOf(result.getInt("section_no"));
 						this.currentlyActiveClassDescription = result.getString("class_description");
 						
-						log.info("activating class: " + this.currentlyActiveClassCourseNumber + ", " + this.currentlyActiveClassTerm + ", " + this.currentlyActiveClassSectionNo);
+						log.info(Constants.activatingClass + this.currentlyActiveClassCourseNumber + ", " + this.currentlyActiveClassTerm + ", " + this.currentlyActiveClassSectionNo);
 						return true;
 					}
 					else
@@ -279,9 +411,16 @@ public class DatabaseConnection
 			else
 			{
 				System.out.println("Currently Active Class: ");
-				System.out.print("Id: " + this.currentlyActiveClassId + ", course_number: " + this.currentlyActiveClassCourseNumber + ", term: " + this.currentlyActiveClassTerm
-								+ ",\n" + "section_no: " + this.currentlyActiveClassSectionNo + ", description: " + this.currentlyActiveClassDescription);
-				
+				String[][] resultTable = new String[1][4];
+				resultTable[0] = new String[4];
+				resultTable[0][0] = new String(String.valueOf(this.currentlyActiveClassId));
+				resultTable[0][1] = new String(this.currentlyActiveClassCourseNumber);
+				resultTable[0][2] = new String(this.currentlyActiveClassTerm);
+				resultTable[0][3] = new String(String.valueOf(currentlyActiveClassSectionNo));
+				this.PrintData(Constants.showClass, resultTable);
+				/*System.out.print("Id: " + this.currentlyActiveClassId + ", course_number: " + this.currentlyActiveClassCourseNumber + ", term: " + this.currentlyActiveClassTerm
+								+ ",\n" + "section_no: " + this.currentlyActiveClassSectionNo + ", description: " + this.currentlyActiveClassDescription);*/
+				System.out.println(Constants.activatedClassDescription + this.currentlyActiveClassDescription);
 				return true;
 			}			
 		}
@@ -1021,12 +1160,83 @@ public class DatabaseConnection
 			
 	}
 	
-	public void SetRecentTerm()
+	private void PrintData(String commandType, String[][] resultTable)
 	{
-		//select distinct term from class
-		String query = Constants.select + Constants.distinct + Constants.term + Constants.space + Constants.from + Constants.classString + Constants.semiColon;
-		
-		
+		if(commandType.equals(Constants.listClasses))
+		{
+			/*course_number, term, section_no, student_count*/
+			final Object[] header = new String[] {"course_number", "term", "section_no", "student_count"};
+			System.out.format("%15s%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.selectClass))
+		{
+			/*course_id, course_number, term, section_no*/
+			final Object[] header = new String[] {"course_id", "course_number", "term", "section_no"};
+			System.out.format("%15s%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s%15s\n", row);
+			}
+		}
+	}
+	
+	private String RetrieveMostRecentTerm()
+	{
+		try
+		{
+			String query = "SELECT DISTINCT term from class";
+			
+			ResultSet result = statement.executeQuery(query);
+			
+			String returnResult = null;
+			int counter = 0;
+			
+			while(result.next())
+			{
+				if(counter == 0)
+				{
+					returnResult = new String(result.getString("term"));
+				}
+				else
+				{
+					String tempTerm = result.getString("term");
+					
+					String tempYear = tempTerm.substring(tempTerm.length()-2);
+					int tempYearInt = Integer.parseInt(tempYear);
+					String tempSemester = tempTerm.substring(0, tempTerm.length()-2);
+					
+					String currentYear = returnResult.substring(returnResult.length()-2);
+					int currentYearInt = Integer.parseInt(currentYear);
+					String currentSemester = returnResult.substring(0, returnResult.length()-2);
+					
+					
+					if(tempYearInt > currentYearInt)
+					{
+						returnResult = new String(tempTerm);
+					}
+					else if(tempYearInt == currentYearInt)
+					{
+						if((tempSemester.equals(Constants.Spring) && currentSemester.equals(Constants.Summer))
+						  || (tempSemester.equals(Constants.Spring) && currentSemester.equals(Constants.Fall))
+						  || (tempSemester.equals(Constants.Summer) && currentSemester.equals(Constants.Fall)))
+						{
+							returnResult = new String(tempTerm);
+						}
+					}
+				}
+				counter++;
+			}
+			return returnResult;
+		}
+		catch(SQLException e)
+		{
+			log.warning(Constants.sqlExceptionOccured + Constants.getLatestTerm);
+			return null;
+		}
 	}
 
 }
