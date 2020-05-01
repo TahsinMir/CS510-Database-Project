@@ -171,6 +171,12 @@ public class Constants
 	public static String ioExceptionOccured = "IOException occured during reading CSV file...";
 	public static String readingCsvFile = "reading CSV file...";
 	public static String interruptedExceptionOccured = "InterruptedException occured during ";
+	public static String sectionNoMustBeInteger = "Section No must be an integer";
+	public static String weightMustBeInteger = "Weight must be an integer";
+	public static String pointsMustBeInteger = "Points must be an integer";
+	public static String studentIdMustBeInteger = "Student id must be an integer";
+	public static String gradeMustBeInteger = "Grade must be an integer";
+	public static String studentWithSameIdAlreadyExists = "Student with same student id already exists!";
 	//
 	public static String from = "from ";
 	public static String to = " to ";

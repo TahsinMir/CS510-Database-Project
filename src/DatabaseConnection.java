@@ -79,7 +79,6 @@ public class DatabaseConnection
 	{
 		try
 		{
-			System.out.println("Coming here");
 			this.connection.close();
 			log.info("Connection closed successfully!");
 			return true;
@@ -608,18 +607,20 @@ public class DatabaseConnection
 				{
 					if(resultTable == null)
 					{
-						resultTable = new String[1][3];
-						resultTable[counter] = new String[3];
+						resultTable = new String[1][5];
+						resultTable[counter] = new String[5];
 					}
 					else
 					{
 						resultTable = Arrays.copyOf(resultTable, counter+1);
-						resultTable[counter] = new String[3];
+						resultTable[counter] = new String[5];
 					}
 					
 					resultTable[counter][0] = new String(String.valueOf(result.getInt("category_id")));
 					resultTable[counter][1] = new String(result.getString("category_name"));
-					resultTable[counter][2] = new String(String.valueOf(result.getInt("weight")));
+					resultTable[counter][2] = new String(String.valueOf(result.getInt("assignment_id")));
+					resultTable[counter][3] = new String(result.getString("assignment_name"));
+					resultTable[counter][4] = new String(String.valueOf(result.getInt("point_value")));
 					
 					counter++;
 					/*System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", "
@@ -834,6 +835,19 @@ public class DatabaseConnection
 					}
 					else	//add-student username studentid Last First
 					{
+						//we need to check whether the student_id is valid or open for new student
+						String idCheckQuery = "SELECT * FROM student WHERE student_id=" + command.GetStudentId() + ";";
+						ResultSet idCheckResult = statement.executeQuery(idCheckQuery);
+						int idCheckCounter = 0;
+						while(idCheckResult.next())
+						{
+							idCheckCounter++;
+						}
+						if(idCheckCounter > 0)
+						{
+							log.warning(Constants.studentWithSameIdAlreadyExists);
+							return false;
+						}
 						//student does not exist, so straight-forward, first add the student and then enroll
 						String addStudentQuery = "insert into student (student_id, user_name, student_name) values (" + command.GetStudentId() + ", '" + command.GetStudentUserName() + "', '" + command.GetStudentFullName() + "');";
 						statement.executeUpdate(addStudentQuery);
@@ -867,7 +881,7 @@ public class DatabaseConnection
 			{
 				if(command.GetUsernameSubstring() == null)	//show-students
 				{
-					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st ON st.student_id=en.student "
+					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st ON st.student_id=en.student_id "
 											 + "WHERE en.course_id=" + this.currentlyActiveClassId + ";";
 					ResultSet showStudentsResult = statement.executeQuery(showStudentsQuery);
 					
@@ -908,7 +922,7 @@ public class DatabaseConnection
 				}
 				else	//show-students string
 				{
-					String showStudentsQuery = "SELECT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st "
+					String showStudentsQuery = "SELECT DISTINCT st.student_id, st.user_name, st.student_name FROM enrolled_in en JOIN student st "
 											 + "WHERE en.course_id=" + this.currentlyActiveClassId + " AND (st.user_name LIKE '%" + command.GetUsernameSubstring() + "%' OR st.student_name LIKE '%" + command.GetUsernameSubstring() + "%');";
 					ResultSet showStudentsResult = statement.executeQuery(showStudentsQuery);
 					
@@ -1109,21 +1123,20 @@ public class DatabaseConnection
 				{
 					if(resultTable == null)
 					{
-						resultTable = new String[1][6];
-						resultTable[counter] = new String[6];
+						resultTable = new String[1][5];
+						resultTable[counter] = new String[5];
 					}
 					else
 					{
 						resultTable = Arrays.copyOf(resultTable, counter+1);
-						resultTable[counter] = new String[6];
+						resultTable[counter] = new String[5];
 					}
 					
-					resultTable[counter][0] = new String(String.valueOf(eachAssignmentResult.getInt("student_id")));
-					resultTable[counter][1] = new String(eachAssignmentResult.getString("student_name"));
-					resultTable[counter][2] = new String(eachAssignmentResult.getString("category_name"));
-					resultTable[counter][3] = new String(eachAssignmentResult.getString("assignment_name"));
-					resultTable[counter][4] = new String(String.valueOf(eachAssignmentResult.getInt("point_value")));
-					resultTable[counter][5] = new String(String.valueOf(eachAssignmentResult.getInt("grade")));
+					resultTable[counter][0] = new String(eachAssignmentResult.getString("student_name"));
+					resultTable[counter][1] = new String(eachAssignmentResult.getString("category_name"));
+					resultTable[counter][2] = new String(eachAssignmentResult.getString("assignment_name"));
+					resultTable[counter][3] = new String(String.valueOf(eachAssignmentResult.getInt("point_value")));
+					resultTable[counter][4] = new String(String.valueOf(eachAssignmentResult.getInt("grade")));
 					
 					counter++;
 					/*System.out.println(eachAssignmentResult.getInt("student_id") + ", " + eachAssignmentResult.getString("student_name") + ", " + eachAssignmentResult.getString("assignment_name") + ", " + eachAssignmentResult.getInt("point_value") + ", " + eachAssignmentResult.getInt("grade"));*/
@@ -1144,26 +1157,27 @@ public class DatabaseConnection
 				{
 					if(resultTable == null)
 					{
-						resultTable = new String[1][3];
-						resultTable[counter] = new String[3];
+						resultTable = new String[1][4];
+						resultTable[counter] = new String[4];
 					}
 					else
 					{
 						resultTable = Arrays.copyOf(resultTable, counter+1);
-						resultTable[counter] = new String[3];
+						resultTable[counter] = new String[4];
 					}
 					
-					resultTable[counter][0] = new String(String.valueOf(eachAssignmentResult.getInt("category_name")));
-					resultTable[counter][1] = new String(eachAssignmentResult.getString("totalGradeReceived"));
-					resultTable[counter][2] = new String(eachAssignmentResult.getString("totalGradePossible"));
+					resultTable[counter][0] = new String(categoryWiseTotalResult.getString("category_name"));
+					resultTable[counter][1] = new String(String.valueOf(categoryWiseTotalResult.getInt("weight")));
+					resultTable[counter][2] = new String(String.valueOf(categoryWiseTotalResult.getInt("totalGradeReceived")));
+					resultTable[counter][3] = new String(String.valueOf(categoryWiseTotalResult.getInt("totalGradePossible")));
 					
-					totalGradeReceivedInClass = totalGradeReceivedInClass + (((double)eachAssignmentResult.getInt("weight")) * (((double)Integer.parseInt(resultTable[counter][1])) / ((double)Integer.parseInt(resultTable[counter][2]))));
-					totalGradePossible = totalGradePossible + ((double)eachAssignmentResult.getInt("weight"));
+					totalGradeReceivedInClass = totalGradeReceivedInClass + (((double)categoryWiseTotalResult.getInt("weight")) * (((double)Integer.parseInt(resultTable[counter][2])) / ((double)Integer.parseInt(resultTable[counter][3]))));
+					totalGradePossible = totalGradePossible + ((double)categoryWiseTotalResult.getInt("weight"));
 					counter++;
 				}
 				this.PrintData(Constants.studentGrades, resultTable, Constants.byCategory);
 				
-				System.out.print("Overall grade in class: " + totalGradeReceivedInClass + "/" + totalGradePossible);
+				System.out.printf("Overall grade in class: %.2f/%f\n",totalGradeReceivedInClass, totalGradePossible);
 				return true;
 			}
 			catch(SQLException e)
@@ -1354,6 +1368,10 @@ public class DatabaseConnection
 	
 	private void PrintData(String commandType, String[][] resultTable, String subCommand)
 	{
+		if(resultTable == null)
+		{
+			return;
+		}
 		if(commandType.equals(Constants.listClasses))
 		{
 			/*course_number, term, section_no, student_count*/
@@ -1374,14 +1392,34 @@ public class DatabaseConnection
 				System.out.format("%15s%15s%15s%15s\n", row);
 			}
 		}
-		else if(commandType.equals(Constants.showCategories))
+		else if(commandType.equals(Constants.showClass))
 		{
-			/*course_id, course_number, term, section_no, */
+			/*course_id, course_number, term, section_no*/
 			final Object[] header = new String[] {"course_id", "course_number", "term", "section_no"};
 			System.out.format("%15s%15s%15s%15s\n", header);
 			for(Object[] row : resultTable)
 			{
 				System.out.format("%15s%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.showCategories))
+		{
+			/*category_id, category_name, weight*/
+			final Object[] header = new String[] {"category_id", "category_name", "weight"};
+			System.out.format("%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s\n", row);
+			}
+		}
+		else if(commandType.equals(Constants.showAssignment))
+		{
+			/*category_id, category_name, assignment_id, assignment_name, point_value*/
+			final Object[] header = new String[] {"category_id", "category_name", "assignment_id", "assignment_name", "point_value"};
+			System.out.format("%15s%15s%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s%15s%15s\n", row);
 			}
 		}
 		else if(commandType.equals(Constants.showStudents))
@@ -1399,21 +1437,21 @@ public class DatabaseConnection
 			if(subCommand.equals(Constants.assignmentList))
 			{
 				/*"student_id, student_name, category_name, assignment_name, point_value, grade*/
-				final Object[] header = new String[] {"student_id", "student_name", "category_name", "assignment_name", "point_value", "grade"};
-				System.out.format("%15s%15s%15s%15s%15s%15s\n", header);
+				final Object[] header = new String[] {"name", "category", "assignment_name", "point_value", "grade"};
+				System.out.format("%15s%15s%15s%18s%15s\n", header);
 				for(Object[] row : resultTable)
 				{
-					System.out.format("%15s%15s%15s%15s%15s%15s\n", row);
+					System.out.format("%15s%15s%15s%18s%15s\n", row);
 				}
 			}
 			else if(subCommand.equals(Constants.byCategory))
 			{
-				/*category_name, totalGradeReceived, totalGradePossible*/
-				final Object[] header = new String[] {"category_name", "totalGradeReceived", "totalGradePossible"};
-				System.out.format("%15s%15s%15s\n", header);
+				/*category_name, weight, totalGradeReceived, totalGradePossible*/
+				final Object[] header = new String[] {"category_name", "weight", "totalGradeReceived", "totalGradePossible"};
+				System.out.format("%13s%8s%25s%25s\n", header);
 				for(Object[] row : resultTable)
 				{
-					System.out.format("%15s%15s%15s\n", row);
+					System.out.format("%13s%8s%25s%25s\n", row);
 				}
 			}
 		}

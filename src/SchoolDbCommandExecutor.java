@@ -7,10 +7,16 @@ public class SchoolDbCommandExecutor
 {
 	private Logger log;
 	private DatabaseConnection dbConnection;
+	private static boolean connectionEstablishment;
 	
 	public static void main(String[] args)
 	{
 		SchoolDbCommandExecutor schoolDbCommandExecutor = new SchoolDbCommandExecutor();
+		
+		if(!connectionEstablishment)
+		{
+			return;
+		}
 		
 		//Adding shut down hook
 		Runtime.getRuntime().addShutdownHook(new Thread()
@@ -34,7 +40,7 @@ public class SchoolDbCommandExecutor
 		System.out.println("attempting to open a db instance");
 		this.dbConnection = new DatabaseConnection(this.log);
 		System.out.println("attempting to establish db connection");
-		this.dbConnection.EstablistDatabaseConnection();
+		connectionEstablishment = this.dbConnection.EstablistDatabaseConnection();
 		/*System.out.println("attempting to close db connection");
 		this.dbConnection.CloseConnection();*/
 	}
@@ -47,7 +53,7 @@ public class SchoolDbCommandExecutor
 		
 		while(!exit)
 		{
-			System.out.println("reading line...");
+			System.out.println("reading command...");
 			String line = scan.nextLine();
 			
 			if(line.equals("exit"))
@@ -65,7 +71,7 @@ public class SchoolDbCommandExecutor
 			if(command != null)
 			{
 				System.out.println("Valid command!");
-				System.out.println(command);
+				//System.out.println(command);
 				
 				boolean executionResult = this.dbConnection.ExecuteQuery(command);
 			}
@@ -117,12 +123,10 @@ public class SchoolDbCommandExecutor
 	{
 		if(CountCharacterInString(commandStr, Constants.quoteMark) % 2 != 0)
 		{
-			System.out.println("Invalid");
 			return null;
 		}
 		if(!IsStringQuoteValid(commandStr))
 		{
-			System.out.println("Invalid2");
 			return null;
 		}
 		
@@ -132,7 +136,6 @@ public class SchoolDbCommandExecutor
 		int endIndex = 0;
 		boolean didQuoteStart = false;
 		int resultCounter = 0;
-		System.out.println("Total string length: " + commandStr.length());
 		while(endIndex <= commandStr.length())
 		{
 			if(endIndex == commandStr.length())
@@ -225,14 +228,6 @@ public class SchoolDbCommandExecutor
 			endIndex++;
 		}
 		
-		System.out.println("Splitting commandline: Found length: " + resultCounter + ", actual: " + result.length);
-		
-		System.out.println("arguments:");
-		for(int i=0;i<result.length;i++)
-		{
-			System.out.println(result[i]);
-		}
-		
 		return result;
 		
 	}
@@ -305,6 +300,16 @@ public class SchoolDbCommandExecutor
 				return null;
 			}
 			
+			try
+			{
+				int sectionNo = Integer.parseInt(splittedCommand[3]);
+			}
+			catch(Exception e)
+			{
+				log.warning("Section No must be an integer");
+				return null;
+			}
+			
 			command.SetCommandType(Constants.newClass);
 			command.SetCourseNumber(splittedCommand[1]);
 			command.SetCourseTerm(modifiedTerm);
@@ -343,10 +348,25 @@ public class SchoolDbCommandExecutor
 			command.SetCourseNumber(splittedCommand[1]);
 			if(splittedCommand.length > 2)
 			{
-				command.SetCourseTerm(splittedCommand[2]);
+				String modifiedTerm = isTermStructureSatisfied(splittedCommand[2]);
+				if(modifiedTerm == null)
+				{
+					return null;
+				}
+				command.SetCourseTerm(modifiedTerm);
 			}
 			if(splittedCommand.length > 3)
 			{
+				try
+				{
+					int sectionNo = Integer.parseInt(splittedCommand[3]);
+				}
+				catch(Exception e)
+				{
+					log.warning(Constants.sectionNoMustBeInteger);
+					return null;
+				}
+				
 				command.SetCourseSectionNo(splittedCommand[3]);
 			}
 			return command;
@@ -387,6 +407,16 @@ public class SchoolDbCommandExecutor
 				return null;
 			}
 			
+			try
+			{
+				int weight = Integer.parseInt(splittedCommand[2]);
+			}
+			catch(Exception e)
+			{
+				log.warning(Constants.weightMustBeInteger);
+				return null;
+			}
+			
 			command.SetCommandType(Constants.addCategory);
 			command.SetCategoryName(splittedCommand[1]);
 			command.SetCategoryWeightForCourse(splittedCommand[2]);
@@ -417,6 +447,16 @@ public class SchoolDbCommandExecutor
 				return null;
 			}
 			
+			try
+			{
+				int point = Integer.parseInt(splittedCommand[4]);
+			}
+			catch(Exception e)
+			{
+				log.warning(Constants.pointsMustBeInteger);
+				return null;
+			}
+			
 			command.SetCommandType(Constants.addAssignment);
 			command.SetAssignmentName(splittedCommand[1]);
 			command.SetAssignmentCategory(splittedCommand[2]);
@@ -443,6 +483,16 @@ public class SchoolDbCommandExecutor
 			
 			if(splittedCommand.length == 5)
 			{
+				try
+				{
+					int studentId = Integer.parseInt(splittedCommand[2]);
+				}
+				catch(Exception e)
+				{
+					log.warning(Constants.studentIdMustBeInteger);
+					return null;
+				}
+				
 				command.SetStudentId(splittedCommand[2]);
 				command.SetStudentFullName(splittedCommand[4].toLowerCase() + Constants.space + splittedCommand[3].toLowerCase());
 			}
@@ -476,6 +526,16 @@ public class SchoolDbCommandExecutor
 						    + Constants.space + Constants.assignmentName + Constants.space + Constants.userName
 						    + Constants.space + Constants.grade);
 				
+				return null;
+			}
+			
+			try
+			{
+				int grade = Integer.parseInt(splittedCommand[3]);
+			}
+			catch(Exception e)
+			{
+				log.warning(Constants.gradeMustBeInteger);
 				return null;
 			}
 			
