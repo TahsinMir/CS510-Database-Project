@@ -1131,13 +1131,15 @@ public class DatabaseConnection
 				
 				this.PrintData(Constants.studentGrades, resultTable, Constants.assignmentList);
 				//subtotals by category
-				String categoryWiseTotalQuery = "SELECT cat.category_name, SUM(rgf.grade) AS totalGradeReceived, SUM(a.point_value) AS totalGradePossible FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
-											  + "WHERE a.course_id=" + this.currentlyActiveClassId + " AND rgf.student_id=" + studentId + " GROUP BY cat.category_name;";
+				String categoryWiseTotalQuery = "SELECT cat.category_name, con.weight, SUM(rgf.grade) AS totalGradeReceived, SUM(a.point_value) AS totalGradePossible FROM assignment a JOIN receives_grade_for rgf ON a.assignment_id=rgf.assignment_id JOIN category cat on a.category_id=cat.category_id "
+											  + "JOIN contains con ON cat.category_id=con.category_id WHERE a.course_id=" + this.currentlyActiveClassId + " AND rgf.student_id=" + studentId + " GROUP BY cat.category_name, con.weight;";
 				
 				ResultSet categoryWiseTotalResult = statement.executeQuery(categoryWiseTotalQuery);
 				
 				counter = 0;
 				resultTable = null;
+				double totalGradeReceivedInClass = 0;
+				double totalGradePossible = 0;
 				while(categoryWiseTotalResult.next())
 				{
 					if(resultTable == null)
@@ -1155,16 +1157,18 @@ public class DatabaseConnection
 					resultTable[counter][1] = new String(eachAssignmentResult.getString("totalGradeReceived"));
 					resultTable[counter][2] = new String(eachAssignmentResult.getString("totalGradePossible"));
 					
+					totalGradeReceivedInClass = totalGradeReceivedInClass + (((double)eachAssignmentResult.getInt("weight")) * (((double)Integer.parseInt(resultTable[counter][1])) / ((double)Integer.parseInt(resultTable[counter][2]))));
+					totalGradePossible = totalGradePossible + ((double)eachAssignmentResult.getInt("weight"));
 					counter++;
 				}
 				this.PrintData(Constants.studentGrades, resultTable, Constants.byCategory);
 				
-				//TOTO:: overall grade in class
+				System.out.print("Overall grade in class: " + totalGradeReceivedInClass + "/" + totalGradePossible);
 				return true;
 			}
 			catch(SQLException e)
 			{
-				log.warning("SQLException occured during showing student grades...");
+				log.warning(Constants.sqlExceptionOccured + Constants.showingStudentGrade);
 				e.printStackTrace();
 				return false;
 			}
@@ -1179,19 +1183,19 @@ public class DatabaseConnection
 			
 			try
 			{
-				String resultQuery = "SELECT s.student_id, SUM(rgf.grade) as total FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
-						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id;";
+				String resultQuery = "SELECT s.student_id, s.user_name, s.student_name, a.category_id, SUM(rgf.grade) AS total_grade_received, SUM(a.point_value) AS total_grade_possible FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
+						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id, s.user_name, s.student_name, a.category_id;";
 				ResultSet gradeResult = statement.executeQuery(resultQuery);
 				
 				while(gradeResult.next())
 				{
-					System.out.println(gradeResult.getInt("student_id") + ", " + gradeResult.getInt("total"));
+					System.out.println(gradeResult.getInt("student_id") + ", " + gradeResult.getString("user_name") + ", " + gradeResult.getString("student_name") + ", " + gradeResult.getInt("category_id") + ", " + gradeResult.getInt("total_grade_received") + ", " + gradeResult.getInt("total_grade_possible"));
 				}
 				return true;
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during showing gradebook...");
+				log.warning(Constants.sqlExceptionOccured + Constants.showingGradebook);
 				e.printStackTrace();
 				return false;
 			} 			
@@ -1202,7 +1206,7 @@ public class DatabaseConnection
 			//check activated class
 			if(this.currentlyActiveClassId == null)
 			{
-				log.warning("No Active class...");
+				log.warning(Constants.noActiveClass);
 				return false;
 			}
 			try
@@ -1281,11 +1285,23 @@ public class DatabaseConnection
 					//check grade limit
 					if(Integer.parseInt(grade) > pointValue)
 					{
-						log.warning("Point exceeds the maximum possible point!!");
+						log.warning(Constants.pointExceedMaxPossiblePoint);
+						//continue;
+					}
+					//TODO: check if student is enrolled
+					System.out.println("username: " + userName + ", and grade: " + grade);
+					String checkClassEnrollmentQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId + " AND student_id=" + studentId;
+					ResultSet checkClassEnrollmentResult = statement.executeQuery(checkClassEnrollmentQuery);
+					int checkCounter = 0;
+					while(checkClassEnrollmentResult.next())
+					{
+						checkCounter++;
+					}
+					if(checkCounter == 0)
+					{
+						log.warning(Constants.studentNotEnrolledInCurrentClass);
 						continue;
 					}
-					
-					System.out.println("username: " + userName + ", and grade: " + grade);
 					//everything is okay, now we check if the student already has a grade for this assignment
 					String checkAssignmentAlreadyGradedQuery = "SELECT * FROM receives_grade_for WHERE assignment_id=" + assignmentId
 															 + " AND student_id=" + studentId + ";";
@@ -1294,41 +1310,42 @@ public class DatabaseConnection
 					{
 						String resultQuery = "UPDATE receives_grade_for SET grade=" + grade + " WHERE student_id=" + studentId + " AND assignment_id=" + assignmentId + ";";
 						statement.executeUpdate(resultQuery);
-						log.info("student grade updated!!");
+						log.info(Constants.studentGradeUpdated);
 					}
 					else	//otherwise we just add the grade
 					{
 						String resultQuery = "insert into receives_grade_for (student_id, assignment_id, grade) values (" + studentId
 										   + ", " + assignmentId + ", " + grade + ");";
 						statement.executeUpdate(resultQuery);
-						log.info("student grade added!!");
+						log.info(Constants.studentGradeAdded);
 					}
 		            TimeUnit.MILLISECONDS.sleep(200);
-		            System.out.println();
 		         }
 		         br.close();
 			}
 			catch (FileNotFoundException e)
 			{
-				log.warning("FileNotFoundException occured during reading CSV file...");
+				log.warning(Constants.fileNotFoundExceptionOccured);
 				e.printStackTrace();
 				return false;
 			}
 			catch(IOException e)
 			{
-				log.warning("IOException occured during reading CSV file...");
+				log.warning(Constants.ioExceptionOccured);
 				e.printStackTrace();
 				return false;
 			}
 			catch (SQLException e)
 			{
-				log.warning("SQLException occured during reading CSV file...");
+				log.warning(Constants.sqlExceptionOccured + Constants.readingCsvFile);
 				e.printStackTrace();
+				return false;
 			}
 			catch (InterruptedException e)
 			{
-				log.warning("InterruptedException occured during reading CSV file...");
+				log.warning(Constants.interruptedExceptionOccured + Constants.readingCsvFile);
 				e.printStackTrace();
+				return false;
 			}
 		}
 		return true;

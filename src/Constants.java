@@ -165,6 +165,12 @@ public class Constants
 	public static String studentNotEnrolledInCurrentClass = "Student is not enrolled in the current class";
 	public static String replacingPreviouslyReceivedGrade = "Replacing previously received grade ";
 	public static String addingStudentGrade = "adding student grade...";
+	public static String showingStudentGrade = "showing student grades...";
+	public static String showingGradebook= "showing gradebook...";
+	public static String fileNotFoundExceptionOccured = "FileNotFoundException occured during reading CSV file...";
+	public static String ioExceptionOccured = "IOException occured during reading CSV file...";
+	public static String readingCsvFile = "reading CSV file...";
+	public static String interruptedExceptionOccured = "InterruptedException occured during ";
 	//
 	public static String from = "from ";
 	public static String to = " to ";
