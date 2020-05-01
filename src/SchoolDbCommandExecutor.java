@@ -3,22 +3,29 @@ import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/***
+ * 
+ * @author Tahsin Imtiaz
+ * This represents the School database Command Executor which
+ * takes commands mentioned in the project description and does appropriate operation.
+ */
 public class SchoolDbCommandExecutor
 {
-	private Logger log;
-	private DatabaseConnection dbConnection;
-	private static boolean connectionEstablishment;
+	private Logger log;		//This logger is used to print INFO and WARNING messages
+	private DatabaseConnection dbConnection;	//holds the connection to he database
+	private static boolean connectionEstablishment;		//keeps track whether a connection is established or not
 	
 	public static void main(String[] args)
 	{
-		SchoolDbCommandExecutor schoolDbCommandExecutor = new SchoolDbCommandExecutor();
+		SchoolDbCommandExecutor schoolDbCommandExecutor = new SchoolDbCommandExecutor();	//create a SchoolDbCommandExecutor instance
 		
-		if(!connectionEstablishment)
+		if(!connectionEstablishment)	//check whether a connection is established
 		{
 			return;
 		}
 		
-		//Adding shut down hook
+		//Adding shut down hook, if we press ctrl+c to close the program,
+		//the database connection will be handled(closed) before the program shuts down.
 		Runtime.getRuntime().addShutdownHook(new Thread()
 		{
 			public void run()
@@ -29,34 +36,40 @@ public class SchoolDbCommandExecutor
 				System.out.println("shutting down...");
 			}
 		});
-		schoolDbCommandExecutor.ExecuteCommands();
+		schoolDbCommandExecutor.ExecuteCommands();	//finally, start reading and executing commands
 	}
 	
+	/**
+	 * Creates one instance of SchoolDbCommandExecutor
+	 */
 	public SchoolDbCommandExecutor()
 	{
+		//initializing the logger
 		this.log = Logger.getLogger(SchoolDbCommandExecutor.class.getName());
 		this.log.setLevel(Level.ALL);
 		
+		//connection to db
 		System.out.println("attempting to open a db instance");
 		this.dbConnection = new DatabaseConnection(this.log);
 		System.out.println("attempting to establish db connection");
 		connectionEstablishment = this.dbConnection.EstablistDatabaseConnection();
-		/*System.out.println("attempting to close db connection");
-		this.dbConnection.CloseConnection();*/
 	}
 	
+	/**
+	 * reads and executes commands given by the user.
+	 */
 	private void ExecuteCommands()
 	{
-		Scanner scan = new Scanner(System.in);
+		Scanner scan = new Scanner(System.in);	//scanner to read user commands
 		
-		boolean exit = false;
+		boolean exit = false;	// command will be read until user wants to exit
 		
 		while(!exit)
 		{
 			System.out.println("reading command...");
 			String line = scan.nextLine();
 			
-			if(line.equals("exit"))
+			if(line.equals("exit"))		//user wants to exit
 			{
 				exit = true;
 				log.info("closing database connection");
@@ -64,31 +77,45 @@ public class SchoolDbCommandExecutor
 				continue;
 			}
 			
-			//String[] result = SplitCommandLine(line);
-			
 			Command command = PrepareCommand(line);
 			
 			if(command != null)
 			{
-				System.out.println("Valid command!");
-				//System.out.println(command);
+				System.out.println(Constants.validCommand);
 				
 				boolean executionResult = this.dbConnection.ExecuteQuery(command);
+				if(executionResult)
+				{
+					log.info("command executed successfully");
+				}
+				else
+				{
+					log.info("command execution failed");
+				}
 			}
 			else
 			{
-				System.out.println("Invalid command!!");
+				System.out.println(Constants.invalidCommand);
 			}
-			
-			
 		}
 	}
 	
+	/**
+	 * Counts how many times a character appeared in a string.
+	 * @param line - the string where the character is checked.
+	 * @param character - the character that is check.
+	 * @return An integer indicating how many time the character occured in the line string.
+	 */
 	private int CountCharacterInString(String line, char character)
 	{
 		return (int)line.chars().filter(num -> num == character).count();
 	}
 	
+	/**
+	 * checks whether the quotes are valid in a command line from the user
+	 * @param line - the entire string given by the user
+	 * @return whether line is Quote valid or not
+	 */
 	private boolean IsStringQuoteValid(String line)
 	{
 		boolean didQuoteStart = false;
@@ -119,6 +146,11 @@ public class SchoolDbCommandExecutor
 		return true;
 	}
 	
+	/**
+	 * parses the command string and separates the arguments
+	 * @param commandStr
+	 * @return the argument values separately
+	 */
 	private String[] SplitCommandLine(String commandStr)
 	{
 		if(CountCharacterInString(commandStr, Constants.quoteMark) % 2 != 0)
@@ -232,6 +264,11 @@ public class SchoolDbCommandExecutor
 		
 	}
 	
+	/**
+	 * checks whether "term" has valid structure since "term" has specific structure.
+	 * @param potentialTerm - the term string
+	 * @return A standardized string for term is term is valid, otherwise null
+	 */
 	private String isTermStructureSatisfied(String potentialTerm)
 	{
 		String year = potentialTerm.substring(potentialTerm.length()-2);
@@ -273,6 +310,11 @@ public class SchoolDbCommandExecutor
 		return result;
 	}
 	
+	/**
+	 * prepares the command from the string supplied by the user to be sent to the database instance
+	 * @param commandStr - The command string read from user.
+	 * @return a command instance having the proper arguments for the database.
+	 */
 	private Command PrepareCommand(String commandStr)
 	{
 		String[] splittedCommand = SplitCommandLine(commandStr);
@@ -283,7 +325,7 @@ public class SchoolDbCommandExecutor
 		}
 		
 		Command command = new Command();
-		if(splittedCommand[0].equals(Constants.newClass))
+		if(splittedCommand[0].equals(Constants.newClass))	//for creating a new class
 		{
 			if(splittedCommand.length != 5)
 			{
@@ -295,14 +337,14 @@ public class SchoolDbCommandExecutor
 			}
 			
 			String modifiedTerm = isTermStructureSatisfied(splittedCommand[2]);
-			if(modifiedTerm == null)
+			if(modifiedTerm == null)	//checks whether term is valid
 			{
 				return null;
 			}
 			
 			try
 			{
-				int sectionNo = Integer.parseInt(splittedCommand[3]);
+				int sectionNo = Integer.parseInt(splittedCommand[3]);	//checks whether sectionNo is a valid integer
 			}
 			catch(Exception e)
 			{
@@ -318,7 +360,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.listClasses))
+		else if(splittedCommand[0].equals(Constants.listClasses))	//show all classes along with # of students
 		{
 			
 			if(splittedCommand.length != 1)
@@ -332,7 +374,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.selectClass))
+		else if(splittedCommand[0].equals(Constants.selectClass))	//activates a class
 		{
 			if(splittedCommand.length < 2 || splittedCommand.length > 4)
 			{
@@ -348,7 +390,7 @@ public class SchoolDbCommandExecutor
 			command.SetCourseNumber(splittedCommand[1]);
 			if(splittedCommand.length > 2)
 			{
-				String modifiedTerm = isTermStructureSatisfied(splittedCommand[2]);
+				String modifiedTerm = isTermStructureSatisfied(splittedCommand[2]);	//checks whether term is valid
 				if(modifiedTerm == null)
 				{
 					return null;
@@ -359,7 +401,7 @@ public class SchoolDbCommandExecutor
 			{
 				try
 				{
-					int sectionNo = Integer.parseInt(splittedCommand[3]);
+					int sectionNo = Integer.parseInt(splittedCommand[3]);	//checks whether section no is a valid integer
 				}
 				catch(Exception e)
 				{
@@ -371,7 +413,7 @@ public class SchoolDbCommandExecutor
 			}
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.showClass))
+		else if(splittedCommand[0].equals(Constants.showClass))		//shows the currently active class
 		{
 			if(splittedCommand.length != 1)
 			{
@@ -384,7 +426,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.showCategories))
+		else if(splittedCommand[0].equals(Constants.showCategories))	//shows all the categories in the active class
 		{
 			if(splittedCommand.length != 1)
 			{
@@ -397,7 +439,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.addCategory))
+		else if(splittedCommand[0].equals(Constants.addCategory))	//adds a category
 		{
 			if(splittedCommand.length != 3)
 			{
@@ -409,7 +451,7 @@ public class SchoolDbCommandExecutor
 			
 			try
 			{
-				int weight = Integer.parseInt(splittedCommand[2]);
+				int weight = Integer.parseInt(splittedCommand[2]);		//checks whether weight is a valid integer
 			}
 			catch(Exception e)
 			{
@@ -423,7 +465,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.showAssignment))
+		else if(splittedCommand[0].equals(Constants.showAssignment))	//shows all the assignments for the active class
 		{
 			if(splittedCommand.length != 1)
 			{
@@ -436,7 +478,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.addAssignment))
+		else if(splittedCommand[0].equals(Constants.addAssignment))	//adds an assignment to the active class
 		{
 			if(splittedCommand.length != 5)
 			{
@@ -449,7 +491,7 @@ public class SchoolDbCommandExecutor
 			
 			try
 			{
-				int point = Integer.parseInt(splittedCommand[4]);
+				int point = Integer.parseInt(splittedCommand[4]);	//checks whether point value is a valid integer
 			}
 			catch(Exception e)
 			{
@@ -465,7 +507,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.addStudent))
+		else if(splittedCommand[0].equals(Constants.addStudent))	//adds a students and enrolls in the active class
 		{
 			if(splittedCommand.length != 5 && splittedCommand.length != 2)
 			{
@@ -485,7 +527,7 @@ public class SchoolDbCommandExecutor
 			{
 				try
 				{
-					int studentId = Integer.parseInt(splittedCommand[2]);
+					int studentId = Integer.parseInt(splittedCommand[2]);	//checks whether student id is a valid integer
 				}
 				catch(Exception e)
 				{
@@ -499,7 +541,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.showStudents))
+		else if(splittedCommand[0].equals(Constants.showStudents))	//shows students in the active class
 		{
 			if(splittedCommand.length > 2)
 			{
@@ -517,7 +559,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.grade))
+		else if(splittedCommand[0].equals(Constants.grade))	//assigns grade to student for particular assignment
 		{
 			if(splittedCommand.length != 4)
 			{
@@ -531,7 +573,7 @@ public class SchoolDbCommandExecutor
 			
 			try
 			{
-				int grade = Integer.parseInt(splittedCommand[3]);
+				int grade = Integer.parseInt(splittedCommand[3]);	//check whether grade is a valid integer
 			}
 			catch(Exception e)
 			{
@@ -546,7 +588,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.studentGrades))
+		else if(splittedCommand[0].equals(Constants.studentGrades))		//reports particular students grades in the active class
 		{
 			if(splittedCommand.length != 2)
 			{
@@ -562,7 +604,7 @@ public class SchoolDbCommandExecutor
 			
 			return command;
 		}
-		else if(splittedCommand[0].equals(Constants.gradebook))
+		else if(splittedCommand[0].equals(Constants.gradebook))	//reports grades of all students in the active class
 		{
 			if(splittedCommand.length != 1)
 			{
@@ -602,6 +644,10 @@ public class SchoolDbCommandExecutor
 			return null;
 		}
 	}
+	
+	/**
+	 * closes the database connection
+	 */
 	public void CloseDatabase()
 	{
 		this.dbConnection.CloseConnection();

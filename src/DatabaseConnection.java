@@ -12,19 +12,29 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
+/***
+ * 
+ * @author Tahsin Imtiaz
+ * This represents the Database connector which
+ */
 public class DatabaseConnection
 {
-	private Logger log;
-	private Connection connection = null;
-	private String nRemotePort = "53488";
-	private String strDbPassword = "Databasemm0";
-	private Statement statement;
-	private String mostRecentTerm = null;
-	private String currentlyActiveClassId = null;
+	private Logger log;	//the logger
+	private Connection connection = null;	//hold the database connection
+	private String nRemotePort = "53488";	//my port for onyx
+	private String strDbPassword = "Databasemm0";	//my password for onyx
+	private Statement statement;	//the statement used for executing query
+	private String mostRecentTerm = null;	//holds the most recent term
+	private String currentlyActiveClassId = null;	//holds the id of the currently active class
 	private String currentlyActiveClassCourseNumber = null;
 	private String currentlyActiveClassTerm = null;
 	private String currentlyActiveClassSectionNo = null;
 	private String currentlyActiveClassDescription = null;
+	
+	/**
+	 * Creates one instance of SchoolDbCommandExecutor
+	 * @param log - the logger
+	 */
 	public DatabaseConnection(Logger log)
 	{
 		this.log = log;
@@ -39,6 +49,10 @@ public class DatabaseConnection
 		}
 	}
 	
+	/**
+	 * establishes the database connection
+	 * @return a boolean value indicating whether the connection is established or not.
+	 */
 	public boolean EstablistDatabaseConnection()
 	{
 		
@@ -90,7 +104,7 @@ public class DatabaseConnection
 		}
 	}
 	
-	public boolean CreateSchoolDB()
+	/*public boolean CreateSchoolDB()
 	{
 		try
 		{
@@ -102,8 +116,13 @@ public class DatabaseConnection
 			System.out.println("SQLException occured during database creation: " + e.getStackTrace());
 			return false;
 		}
-	}
+	}*/
 	
+	/**
+	 * Executes the given command
+	 * @param command - the command instance holding all the information
+	 * @return a boolean value indicating whether the command is successfully executed
+	 */
 	public boolean ExecuteQuery(Command command)
 	{
 		String query;
@@ -246,8 +265,6 @@ public class DatabaseConnection
 						resultTable[counter][2] = new String(result.getString("term"));
 						resultTable[counter][3] = new String(String.valueOf(result.getInt("section_no")));
 						
-						/*System.out.println(result.getInt("course_id") + ", " + result.getString("course_number")
-										 + ", " + result.getString("term") + ", " + result.getString("section_no"));*/
 						
 						if(counter == 0)
 						{
@@ -285,7 +302,9 @@ public class DatabaseConnection
 				}
 				catch(SQLException e)
 				{
-					
+					log.warning(Constants.sqlExceptionOccured + Constants.selectingClass);
+					e.printStackTrace();
+					return false;
 				}
 			}
 			else if(command.GetCourseSectionNo() == null)	//course_number, term given
@@ -417,8 +436,7 @@ public class DatabaseConnection
 				resultTable[0][2] = new String(this.currentlyActiveClassTerm);
 				resultTable[0][3] = new String(String.valueOf(currentlyActiveClassSectionNo));
 				this.PrintData(Constants.showClass, resultTable, null);
-				/*System.out.print("Id: " + this.currentlyActiveClassId + ", course_number: " + this.currentlyActiveClassCourseNumber + ", term: " + this.currentlyActiveClassTerm
-								+ ",\n" + "section_no: " + this.currentlyActiveClassSectionNo + ", description: " + this.currentlyActiveClassDescription);*/
+				
 				System.out.println(Constants.activatedClassDescription + this.currentlyActiveClassDescription);
 				return true;
 			}			
@@ -432,10 +450,6 @@ public class DatabaseConnection
 				return false;
 			}
 			
-			//select con.category_id, cat.category_name, con.weight
-			//from class cl join contains con on cl.course_id = con.course_id
-			//join category cat on con.category_id = cat.category_id
-			//where cl.course_id = this.currentlyActiveClassId			
 			try
 			{
 				query = "SELECT con.category_id, cat.category_name, con.weight FROM class cl JOIN contains con ON cl.course_id = con.course_id "
@@ -464,7 +478,6 @@ public class DatabaseConnection
 					resultTable[counter][2] = new String(String.valueOf(result.getInt("weight")));
 					
 					counter++;
-					//System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", " + result.getInt("weight"));
 				}
 				
 				this.PrintData(Constants.showCategories, resultTable, null);
@@ -525,7 +538,6 @@ public class DatabaseConnection
 				}
 				
 				//now the category exists no matter what, we can just add the weight in contains
-				//TODO: do we update or not?
 				//now we have to check whether this category is already exists in contains for this class
 				String categoryClassContainCheckQuery = "SELECT * FROM contains WHERE course_id=" + this.currentlyActiveClassId
 												      + " AND category_id=" + currentCategoryId + ";";
@@ -623,9 +635,6 @@ public class DatabaseConnection
 					resultTable[counter][4] = new String(String.valueOf(result.getInt("point_value")));
 					
 					counter++;
-					/*System.out.println(result.getInt("category_id") + ", " + result.getString("category_name") + ", "
-									  + result.getInt("assignment_id") + ", " + result.getString("assignment_name") + ", "
-									  + result.getInt("point_value"));*/
 				}
 				
 				if(counter == 0)
@@ -906,8 +915,6 @@ public class DatabaseConnection
 						resultTable[counter][2] = new String(showStudentsResult.getString("student_name"));
 						
 						counter++;
-						
-						/*System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getString("student_name"));*/
 					}
 					if(counter == 0)
 					{
@@ -946,8 +953,6 @@ public class DatabaseConnection
 						resultTable[counter][2] = new String(showStudentsResult.getString("student_name"));
 
 						counter++;
-						
-						/*System.out.println(showStudentsResult.getInt("student_id") + ", " + showStudentsResult.getString("user_name") + ", " + showStudentsResult.getShort("student_name"));*/
 					}
 					if(counter == 0)
 					{
@@ -1111,7 +1116,6 @@ public class DatabaseConnection
 					return false;
 				}
 				//now first report grade for each assignment
-				//TODO: show assignment even if the student has not got a reuslt fot that assignment
 				String eachAssignmentQuery = "SELECT s.student_id, s.student_name, cat.category_name, a.assignment_name, a.point_value, rgf.grade FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id "
 										   + "JOIN assignment a ON rgf.assignment_id=a.assignment_id JOIN category cat ON a.category_id=cat.category_id WHERE a.course_id=" + this.currentlyActiveClassId
 										   + " AND s.student_id=" + studentId + ";";
@@ -1139,7 +1143,6 @@ public class DatabaseConnection
 					resultTable[counter][4] = new String(String.valueOf(eachAssignmentResult.getInt("grade")));
 					
 					counter++;
-					/*System.out.println(eachAssignmentResult.getInt("student_id") + ", " + eachAssignmentResult.getString("student_name") + ", " + eachAssignmentResult.getString("assignment_name") + ", " + eachAssignmentResult.getInt("point_value") + ", " + eachAssignmentResult.getInt("grade"));*/
 				}
 				
 				this.PrintData(Constants.studentGrades, resultTable, Constants.assignmentList);
@@ -1366,6 +1369,12 @@ public class DatabaseConnection
 			
 	}
 	
+	/**
+	 * prints out the retrieved data in a structured way
+	 * @param commandType - what command type we are dealing with
+	 * @param resultTable - holding the retrieved data
+	 * @param subCommand - secondary command type for print clarification
+	 */
 	private void PrintData(String commandType, String[][] resultTable, String subCommand)
 	{
 		if(resultTable == null)
@@ -1457,6 +1466,10 @@ public class DatabaseConnection
 		}
 	}
 	
+	/**
+	 * retrieves the most recent "term"
+	 * @return the most recent "term" if found, otherwise null
+	 */
 	private String RetrieveMostRecentTerm()
 	{
 		try

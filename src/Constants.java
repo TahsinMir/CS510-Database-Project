@@ -51,7 +51,6 @@ public class Constants
 	
 	public static String nullStr = "NULL";
 	public static String invalidUsage = "Invalid usage of the command: ";
-	public static String invalidCommand = "Invalid command";
 	public static String usageOfCommand = "Usage of command ";
 	public static String space = " ";
 	public static String dot = ".";
@@ -138,6 +137,8 @@ public class Constants
 	public static String studentsInCurrentClass = "Students in current class:";
 	public static String studentGradeUpdated = "Student grade updated!";
 	public static String studentGradeAdded = "student grade added!";
+	public static String validCommand = "Valid command!";
+	public static String invalidCommand = "Invalid command!!";
 	
 	//log.warning
 	public static String classAlreadyExists = "Information about same class already exist!";
@@ -151,6 +152,7 @@ public class Constants
 	public static String activateClass = "activating class...";
 	public static String getLatestTerm = "getting latest term";
 	public static String showingCategory = "showing category..";
+	public static String selectingClass = "selecting class";
 	public static String addingAssignment = "adding assignment..";
 	public static String mostRecentTermUndefined = "Most recent term undefined, cannot select class";
 	public static String categoryAlreadyExists = "This catehory already exists for this class, replacing weight";
