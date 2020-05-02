@@ -1200,14 +1200,39 @@ public class DatabaseConnection
 			
 			try
 			{
-				String resultQuery = "SELECT s.student_id, s.user_name, s.student_name, a.category_id, SUM(rgf.grade) AS total_grade_received, SUM(a.point_value) AS total_grade_possible FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id "
-						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id, s.user_name, s.student_name, a.category_id;";
+				String resultQuery = "SELECT student_id, student_name, SUM(total_grade_received/total_grade_possible*weight) AS total FROM (SELECT s.student_id, s.user_name, s.student_name, a.category_id, con.weight, SUM(rgf.grade) AS total_grade_received, SUM(a.point_value) AS total_grade_possible FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id JOIN contains con ON con.category_id=a.category_id "
+						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id, s.user_name, s.student_name, a.category_id, con.weight) AS inner_table GROUP BY student_id, student_name;";
 				ResultSet gradeResult = statement.executeQuery(resultQuery);
 				
+				int counter = 0;
+				String[][] resultTable = null;
 				while(gradeResult.next())
 				{
-					System.out.println(gradeResult.getInt("student_id") + ", " + gradeResult.getString("user_name") + ", " + gradeResult.getString("student_name") + ", " + gradeResult.getInt("category_id") + ", " + gradeResult.getInt("total_grade_received") + ", " + gradeResult.getInt("total_grade_possible"));
+					if(resultTable == null)
+					{
+						resultTable = new String[1][3];
+						resultTable[counter] = new String[3];
+					}
+					else
+					{
+						resultTable = Arrays.copyOf(resultTable, counter+1);
+						resultTable[counter] = new String[3];
+					}
+					
+					resultTable[counter][0] = new String(String.valueOf(gradeResult.getInt("student_id")));
+					resultTable[counter][1] = new String(gradeResult.getString("student_name"));
+					resultTable[counter][2] = new String(String.valueOf(gradeResult.getDouble("total")));
+					
+					counter++;
 				}
+				
+				if(counter == 0)
+				{
+					log.warning(Constants.noDataFound);
+					return false;
+				}
+				
+				this.PrintData(Constants.gradebook, resultTable, null);
 				return true;
 			}
 			catch (SQLException e)
@@ -1247,7 +1272,7 @@ public class DatabaseConnection
 				
 				if(assignmentCheckCounter == 0)
 				{
-					log.warning("assignmentname does not exist..");
+					log.warning("assignment " +  command.GetAssignmentName() + "does not exist..");
 					return false;
 				}
 				//everything is okay so now insert the file rows
@@ -1263,11 +1288,14 @@ public class DatabaseConnection
 		        while((line = br.readLine()) != null)
 		        {
 		           tempArr = line.split(delimiter);
-		           System.out.println("total line: " + line);
+		           if(tempArr.length != 2)
+		           {
+		        	   log.warning("Invalid dimention of file!");
+		        	   return false;
+		           }
 		           int counter = 0;
 		           for(String tempStr : tempArr)
 		           {
-		        	   System.out.println("counter: " + counter);
 		        	   if(counter == 0)
 		        	   {
 		        		   userName = tempStr;
@@ -1278,11 +1306,9 @@ public class DatabaseConnection
 		        	   }
 		        	   counter++;
 		            }
-		           	System.out.println("username: " + userName + ", grade:" + grade);
 		           	//check username validity
 		           	String usernameCheckQuery = "SELECT * FROM student WHERE user_name='" + userName + "';";
-		           	System.out.println("usernameCheckQuery: " + usernameCheckQuery);
-					ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
+		           	ResultSet usernameCheckResult = statement.executeQuery(usernameCheckQuery);
 					
 					int usernameCheckCounter = 0;
 					int studentId = -1;
@@ -1296,7 +1322,17 @@ public class DatabaseConnection
 					}
 					if(usernameCheckCounter == 0)
 					{
-						log.warning("username does not exist..");
+						log.warning("username " + userName + "does not exist..");
+						continue;
+					}
+					//check whether grade is valid
+					try
+					{
+						int gradeInt = Integer.parseInt(grade);
+					}
+					catch(Exception e)
+					{
+						log.warning(Constants.gradeMustBeInteger);
 						continue;
 					}
 					//check grade limit
@@ -1305,8 +1341,7 @@ public class DatabaseConnection
 						log.warning(Constants.pointExceedMaxPossiblePoint);
 						//continue;
 					}
-					//TODO: check if student is enrolled
-					System.out.println("username: " + userName + ", and grade: " + grade);
+					//check whether the student is really enrolled in the current class
 					String checkClassEnrollmentQuery = "SELECT * FROM enrolled_in WHERE course_id=" + this.currentlyActiveClassId + " AND student_id=" + studentId;
 					ResultSet checkClassEnrollmentResult = statement.executeQuery(checkClassEnrollmentQuery);
 					int checkCounter = 0;
@@ -1336,7 +1371,7 @@ public class DatabaseConnection
 						statement.executeUpdate(resultQuery);
 						log.info(Constants.studentGradeAdded);
 					}
-		            TimeUnit.MILLISECONDS.sleep(200);
+		            TimeUnit.MILLISECONDS.sleep(350);
 		         }
 		         br.close();
 			}
@@ -1462,6 +1497,16 @@ public class DatabaseConnection
 				{
 					System.out.format("%13s%8s%25s%25s\n", row);
 				}
+			}
+		}
+		else if(commandType.equals(Constants.gradebook))
+		{
+			/*student_id, student_name, total*/
+			final Object[] header = new String[] {"student_id", "student_name", "total(%)"};
+			System.out.format("%15s%15s%15s\n", header);
+			for(Object[] row : resultTable)
+			{
+				System.out.format("%15s%15s%15s\n", row);
 			}
 		}
 	}

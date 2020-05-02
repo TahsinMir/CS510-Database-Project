@@ -88,10 +88,6 @@ public class SchoolDbCommandExecutor
 				{
 					log.info("command executed successfully");
 				}
-				else
-				{
-					log.info("command execution failed");
-				}
 			}
 			else
 			{
