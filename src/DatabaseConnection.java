@@ -1272,7 +1272,7 @@ public class DatabaseConnection
 				
 				if(assignmentCheckCounter == 0)
 				{
-					log.warning("assignment " +  command.GetAssignmentName() + "does not exist..");
+					log.warning("assignment " +  command.GetAssignmentName() + " does not exist..");
 					return false;
 				}
 				//everything is okay so now insert the file rows
@@ -1322,7 +1322,7 @@ public class DatabaseConnection
 					}
 					if(usernameCheckCounter == 0)
 					{
-						log.warning("username " + userName + "does not exist..");
+						log.warning("username " + userName + " does not exist..");
 						continue;
 					}
 					//check whether grade is valid
