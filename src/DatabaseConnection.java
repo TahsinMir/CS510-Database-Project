@@ -453,7 +453,7 @@ public class DatabaseConnection
 			try
 			{
 				query = "SELECT con.category_id, cat.category_name, con.weight FROM class cl JOIN contains con ON cl.course_id = con.course_id "
-					  + "JOIN category cat ON con.category_id = cat.category_id WHERE cl.course_id = " + this.currentlyActiveClassId;
+					  + "JOIN category cat ON con.category_id = cat.category_id WHERE con.course_id = " + this.currentlyActiveClassId;
 				
 				ResultSet result = statement.executeQuery(query);
 				
@@ -1201,7 +1201,7 @@ public class DatabaseConnection
 			try
 			{
 				String resultQuery = "SELECT student_id, student_name, SUM(total_grade_received/total_grade_possible*weight) AS total FROM (SELECT s.student_id, s.user_name, s.student_name, a.category_id, con.weight, SUM(rgf.grade) AS total_grade_received, SUM(a.point_value) AS total_grade_possible FROM student s JOIN receives_grade_for rgf ON s.student_id=rgf.student_id JOIN assignment a ON rgf.assignment_id=a.assignment_id JOIN contains con ON con.category_id=a.category_id "
-						  		   + " WHERE a.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id, s.user_name, s.student_name, a.category_id, con.weight) AS inner_table GROUP BY student_id, student_name;";
+						  		   + " WHERE con.course_id=" + this.currentlyActiveClassId + " GROUP BY s.student_id, s.user_name, s.student_name, a.category_id, con.weight) AS inner_table GROUP BY student_id, student_name;";
 				ResultSet gradeResult = statement.executeQuery(resultQuery);
 				
 				int counter = 0;
